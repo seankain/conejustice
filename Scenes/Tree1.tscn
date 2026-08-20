@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://dwou02buhmiko"]
+
+[ext_resource type="ArrayMesh" uid="uid://c0vxkuiai12sx" path="res://ThirdParty/LowPolyTrees/LowPolyTrees_Bark.res" id="1_h80xh"]
+[ext_resource type="Material" uid="uid://cyl58si5ci7b1" path="res://ThirdParty/LowPolyTrees/Bark.tres" id="2_mr0cg"]
+[ext_resource type="Material" uid="uid://clqi4dkaggcm2" path="res://ThirdParty/LowPolyTrees/Leaf.tres" id="3_qumah"]
+
+[node name="Tree1" type="Node3D" unique_id=1352365548]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1539100032]
+transform = Transform3D(1, 0, 0, 0, -4.3711392e-08, -1.0000001, 0, 1.0000001, -4.3711392e-08, 0, 0, 0)
+mesh = ExtResource("1_h80xh")
+surface_material_override/0 = ExtResource("2_mr0cg")
+surface_material_override/1 = ExtResource("3_qumah")

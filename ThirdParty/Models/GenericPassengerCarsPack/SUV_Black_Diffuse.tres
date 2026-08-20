@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bbpm716wekfr5"]
+
+[ext_resource type="Texture2D" uid="uid://856ve2fb7t7k" path="res://ThirdParty/Models/GenericPassengerCarsPack/SUV_Baked_diffuse.png" id="1_1p4qv"]
+
+[resource]
+resource_name = "SUV_Black_Diffuse"
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_1p4qv")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

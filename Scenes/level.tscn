@@ -1,0 +1,65 @@
+[gd_scene format=3 uid="uid://b83jpag3jxn6p"]
+
+[ext_resource type="PackedScene" uid="uid://1cxf4358vnjj" path="res://Scenes/Cone.tscn" id="1_6phgx"]
+[ext_resource type="Texture2D" uid="uid://cgtflu52eujq6" path="res://ThirdParty/Skybox/portland_landing_pad_4k.exr" id="1_k5f4k"]
+[ext_resource type="PackedScene" uid="uid://dr5gis4wwbtx5" path="res://ThirdParty/Models/ResidentialBuilding/source/JK_Elite_test.fbx" id="2_6phgx"]
+[ext_resource type="PackedScene" uid="uid://bla4sban8el15" path="res://Scenes/SUV.tscn" id="4_81xng"]
+[ext_resource type="PackedScene" uid="uid://dwou02buhmiko" path="res://Scenes/Tree1.tscn" id="5_wqkje"]
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_0b4ue"]
+panorama = ExtResource("1_k5f4k")
+
+[sub_resource type="Sky" id="Sky_f2txt"]
+sky_material = SubResource("PanoramaSkyMaterial_0b4ue")
+
+[sub_resource type="Environment" id="Environment_1ainy"]
+background_mode = 2
+sky = SubResource("Sky_f2txt")
+tonemap_mode = 2
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_3s0af"]
+size = Vector3(27.689087, 0.5256882, 33.239624)
+
+[node name="Level" type="Node3D" unique_id=1409735628]
+
+[node name="Cone" parent="." unique_id=1658063173 instance=ExtResource("1_6phgx")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23.593401, 2.6666925, -6.5224404)
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=781939736]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 31.068684, 0)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1751792376]
+environment = SubResource("Environment_1ainy")
+
+[node name="JK_Elite_test" parent="." unique_id=171580626 instance=ExtResource("2_6phgx")]
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1147040737]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -18.901833, 0.91824365, -6.442863)
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1066111996]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=870446616]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.344543, -0.23715591, -6.113098)
+shape = SubResource("BoxShape3D_3s0af")
+
+[node name="StaticBody3D2" parent="." unique_id=412417610 instance=ExtResource("4_81xng")]
+transform = Transform3D(0.8460449, 0, 0.5331117, 0, 1, 0, -0.5331117, 0, 0.8460449, -23.638351, 0.048628718, -7.0099473)
+
+[node name="Tree1" parent="." unique_id=1352365548 instance=ExtResource("5_wqkje")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.579258, 0, 6.414876)
+
+[node name="Tree2" parent="." unique_id=504552644 instance=ExtResource("5_wqkje")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.579258, 0, -0.054726124)
+
+[node name="Tree3" parent="." unique_id=181642661 instance=ExtResource("5_wqkje")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.579258, 0, -5.955411)
+
+[node name="Tree6" parent="." unique_id=1290366345 instance=ExtResource("5_wqkje")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.579258, 0, -10.355932)
+
+[node name="Tree4" parent="." unique_id=413488564 instance=ExtResource("5_wqkje")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.579258, 0, -15.758501)
+
+[node name="Tree5" parent="." unique_id=1495253944 instance=ExtResource("5_wqkje")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.579258, 0, -22.677265)

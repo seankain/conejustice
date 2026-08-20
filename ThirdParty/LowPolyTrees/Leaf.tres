@@ -1,0 +1,17 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://clqi4dkaggcm2"]
+
+[ext_resource type="Texture2D" uid="uid://doyekqdph2hq6" path="res://ThirdParty/LowPolyTrees/Ivy_branch_Variation_1_Diffuse-Ivy_branch_Variation_1_Opacit.png" id="1_pwhgl"]
+[ext_resource type="Texture2D" uid="uid://c56q4nex4r5cj" path="res://ThirdParty/LowPolyTrees/textures/Ivy_branch_Variation_1_Normal.png" id="2_odj6g"]
+
+[resource]
+resource_name = "Leaf"
+transparency = 2
+alpha_scissor_threshold = 0.397
+alpha_antialiasing_mode = 0
+cull_mode = 2
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_pwhgl")
+roughness = 0.5
+normal_enabled = true
+normal_texture = ExtResource("2_odj6g")
+metadata/_gltf_primary_texture_coord = 0

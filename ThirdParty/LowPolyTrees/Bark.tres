@@ -1,0 +1,15 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cyl58si5ci7b1"]
+
+[ext_resource type="Texture2D" uid="uid://2u0nxa28jmbe" path="res://ThirdParty/LowPolyTrees/textures/bark_brown_02_diff_1k.jpg" id="1_bf7yu"]
+[ext_resource type="Texture2D" uid="uid://cwiv072mxsa1h" path="res://ThirdParty/LowPolyTrees/textures/bark_brown_02_rough_1k.jpg" id="2_npf6q"]
+
+[resource]
+resource_name = "Bark"
+cull_mode = 2
+albedo_texture = ExtResource("1_bf7yu")
+metallic_texture = ExtResource("2_npf6q")
+metallic_texture_channel = 2
+roughness_texture = ExtResource("2_npf6q")
+roughness_texture_channel = 1
+normal_enabled = true
+metadata/_gltf_primary_texture_coord = 0
