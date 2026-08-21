@@ -5,7 +5,7 @@ extends Node3D
 ## the HUD in one tree and kick things off. Game rules belong in SectionManager;
 ## resist the pull to grow this into a god object.
 
-@onready var camera_rig: Node3D = $CameraRig
+@onready var camera_rig: CameraRig = $CameraRig
 @onready var cone_thrower: Node = $ConeThrower
 @onready var section_manager: Node = $SectionManager
 @onready var hud: CanvasLayer = $HUD
