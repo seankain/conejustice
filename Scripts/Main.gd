@@ -8,7 +8,7 @@ extends Node3D
 @onready var camera_rig: CameraRig = $CameraRig
 @onready var cone_thrower: ConeThrower = $ConeThrower
 @onready var section_manager: SectionManager = $SectionManager
-@onready var hud: CanvasLayer = $HUD
+@onready var hud: HUD = $HUD
 
 
 ## Temporary: the title screen starts the run once it exists. Until then Main

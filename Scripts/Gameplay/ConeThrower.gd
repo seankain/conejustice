@@ -50,7 +50,9 @@ func _ready() -> void:
 	# The cursor is the aiming device, so it stays visible.
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	remaining = mag_size
-	EventBus.magazine_changed.emit(remaining, mag_size)
+	# Deferred: the HUD is built after this node in the tree, so announcing the
+	# magazine right here would broadcast it to nobody and leave the row empty.
+	announce_magazine.call_deferred()
 
 
 func _process(delta: float) -> void:
@@ -86,6 +88,12 @@ func try_throw() -> bool:
 	EventBus.cone_thrown.emit(remaining)
 	EventBus.magazine_changed.emit(remaining, mag_size)
 	return true
+
+
+## Re-announces magazine state. Anything that builds its display from the
+## capacity needs this after a late connect.
+func announce_magazine() -> void:
+	EventBus.magazine_changed.emit(remaining, mag_size)
 
 
 ## Fills the magazine. The reload phase calls this when its timer completes.
