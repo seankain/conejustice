@@ -7,6 +7,9 @@ extends Control
 ## the throw cooldown: the reticle opens on release and closes as it recovers,
 ## making the wait visible instead of mysterious.
 
+## Typed and hoisted for the same reason as TargetMarkers.BRACKET_CORNERS.
+const TICK_ANGLES: Array[float] = [0.0, PI * 0.5, PI, PI * 1.5]
+
 ## Turn off to get the ordinary system cursor back, e.g. while debugging.
 @export var hide_system_cursor: bool = true
 @export var idle_radius: float = 11.0
@@ -54,7 +57,7 @@ func _draw() -> void:
 	var r := _radius
 
 	# Four ticks around the aim point, opening and closing with the cooldown.
-	for angle in [0.0, PI * 0.5, PI, PI * 1.5]:
+	for angle in TICK_ANGLES:
 		var dir := Vector2(cos(angle), sin(angle))
 		draw_line(p + dir * (r * 0.45), p + dir * r, colour, 2.0)
 

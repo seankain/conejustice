@@ -28,6 +28,13 @@ extends Control
 @export var popup_rise: float = 54.0
 @export var done_fade: float = 0.8
 
+## Typed, and hoisted out of _draw. Iterating an untyped array literal yields
+## Variant corners, and Vector2 arithmetic against a Variant has no inferable
+## result type; as a constant it is also not rebuilt on every frame.
+const BRACKET_CORNERS: Array[Vector2] = [
+	Vector2(0, 0), Vector2(1, 0), Vector2(0, 1), Vector2(1, 1),
+]
+
 var _cars: Array[TargetCar] = []
 ## Seconds since each car was finished, for fading its bracket out.
 var _done_age: Dictionary = {}
@@ -105,7 +112,7 @@ func _draw_bracket(camera: Camera3D, car: TargetCar) -> void:
 	var arm := minf(half_w, half) * 0.4
 	var width := 2.0
 	# Corner brackets, not a full box: less to read past when aiming.
-	for corner in [Vector2(0, 0), Vector2(1, 0), Vector2(0, 1), Vector2(1, 1)]:
+	for corner in BRACKET_CORNERS:
 		var p := rect.position + rect.size * corner
 		var sx := 1.0 if corner.x == 0.0 else -1.0
 		var sy := 1.0 if corner.y == 0.0 else -1.0
