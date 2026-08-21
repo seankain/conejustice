@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://Scripts/Main.gd" id="1_main"]
 [ext_resource type="PackedScene" uid="uid://b83jpag3jxn6p" path="res://Scenes/level.tscn" id="2_level"]
 [ext_resource type="Script" path="res://Scripts/Camera/CameraRig.gd" id="3_rig"]
 [ext_resource type="PackedScene" uid="uid://1cxf4358vnjj" path="res://Scenes/Cone.tscn" id="4_cone"]
 [ext_resource type="Script" path="res://Scripts/Gameplay/ConeThrower.gd" id="5_thrower"]
+[ext_resource type="Script" path="res://Scripts/Gameplay/SectionManager.gd" id="6_section"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
@@ -15,6 +16,7 @@ script = ExtResource("1_main")
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -18.901833, 0.91824365, -6.442863)
 script = ExtResource("3_rig")
 track = NodePath("../Level/CameraTrack")
+debug_advance_with_ui_accept = false
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig"]
 current = true
@@ -28,5 +30,9 @@ camera = NodePath("../CameraRig/Camera3D")
 cone_container = NodePath("../Cones")
 
 [node name="SectionManager" type="Node" parent="."]
+script = ExtResource("6_section")
+rig = NodePath("../CameraRig")
+track = NodePath("../Level/CameraTrack")
+thrower = NodePath("../ConeThrower")
 
 [node name="HUD" type="CanvasLayer" parent="."]

@@ -25,6 +25,8 @@ signal travel_finished(index: int)
 
 ## A cone has settled on a car and been counted.
 signal cone_landed(car: Node3D, on_roof: bool)
+## A counted cone was knocked off again. ScoreManager reverses its award.
+signal cone_unlanded(car: Node3D, on_roof: bool)
 ## A car has reached its required cone count. Fires once per car per run.
 signal car_coned(car: Node3D)
 

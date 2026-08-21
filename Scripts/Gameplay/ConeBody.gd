@@ -9,9 +9,9 @@ extends RigidBody3D
 ## Cones sit on layer 3 and mask 1|2|3, so cone-vs-cone contacts can be made
 ## cheaper later without touching how the world or the cars collide.
 ##
-## Geometry, for anyone tuning throws: the hull runs y -0.51 to +0.25 (0.76m
-## tall) with a 0.51m square base plate, and the origin sits near the top of it,
-## roughly 0.5m above the tip.
+## Geometry, for anyone tuning throws: the hull runs y -0.25 to +0.51 (0.76m
+## tall), tapering from a 0.36m-wide skirt to a 0.07m tip, over a 0.51m square
+## base plate. The origin sits at mid-height, 0.25m above the bottom of the plate.
 
 ## Seconds a cone may live once thrown. Scored cones ignore this: they are the
 ## scoreboard the player can see, so they stay where they landed.
@@ -24,6 +24,10 @@ extends RigidBody3D
 ## Set by TargetCar once this cone counts toward a car. Keeps it out of the
 ## despawn timer and out of the thrower's live-cone cull.
 var is_scored: bool = false
+
+## The TargetCar currently counting this cone. Untyped to avoid a hard cycle
+## between the two scripts. A cone wedged between two cars pays out once only.
+var claimed_by: Node = null
 
 var _age: float = 0.0
 
@@ -39,3 +43,21 @@ func _physics_process(delta: float) -> void:
 	_age += delta
 	if _age >= despawn_time:
 		queue_free()
+
+
+## Claims this cone for a car. Returns false when another car got there first,
+## which is how a cone touching two cars is stopped from counting for both.
+func claim(car: Node) -> bool:
+	if claimed_by != null:
+		return false
+	claimed_by = car
+	is_scored = true
+	return true
+
+
+## Releases a claim, e.g. when a later throw knocks this cone off the car.
+## Only the claiming car may release it.
+func release(car: Node) -> void:
+	if claimed_by == car:
+		claimed_by = null
+		is_scored = false
