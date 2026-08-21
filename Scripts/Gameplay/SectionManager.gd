@@ -24,6 +24,10 @@ extends Node
 ## before the camera pulls away.
 @export var clear_delay: float = 1.5
 
+## Traces the clear-to-arrival chain to the Output panel. Cheap, and the rail
+## is the part of this game with the least visible failure mode.
+@export var log_travel: bool = true
+
 ## Cars armed for the section being played.
 var _armed: Array[TargetCar] = []
 var _coned_count: int = 0
@@ -129,17 +133,33 @@ func _on_car_fully_coned(_car: TargetCar) -> void:
 	_coned_count += 1
 	if _coned_count < _armed.size():
 		return
+	# Deferred out of the emission: _disarm() disconnects fully_coned, and doing
+	# that from inside its own emit, in a handler that then awaits, is asking
+	# for the coroutine to be torn down with the connection.
+	_complete_section.call_deferred()
+
+
+func _complete_section() -> void:
+	if GameState.run_state != GameState.RunState.ENGAGED:
+		return
 
 	var index := GameState.section_index
 	GameState.run_state = GameState.RunState.SECTION_CLEAR
 	_disarm()
 	EventBus.section_cleared.emit(index, _time_remaining)
+	if log_travel:
+		print("[rail] section %d cleared, departing in %.2fs" % [index, clear_delay])
 
 	# Hold before departing so the winning cone is visible where it landed.
 	await get_tree().create_timer(clear_delay).timeout
 	# The run may have been restarted while we waited.
-	if GameState.run_state == GameState.RunState.SECTION_CLEAR:
-		rig.advance()
+	if GameState.run_state != GameState.RunState.SECTION_CLEAR:
+		if log_travel:
+			print("[rail] hold ended in state %d, not departing" % GameState.run_state)
+		return
+	if log_travel:
+		print("[rail] hold ended, calling rig.advance()")
+	rig.advance()
 
 
 func _on_section_timeout(_index: int) -> void:

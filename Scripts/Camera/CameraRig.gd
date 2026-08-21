@@ -16,6 +16,9 @@ extends Node3D
 ## testable before SectionManager exists. Turn off once sections drive the rig.
 @export var debug_advance_with_ui_accept: bool = true
 
+## Traces the travel chain to the Output panel.
+@export var log_travel: bool = true
+
 ## Index of the stop the rig is parked at, or -1 before the first placement.
 var current_index: int = -1
 var is_travelling: bool = false
@@ -23,6 +26,9 @@ var is_travelling: bool = false
 var _tween: Tween
 var _from_xform: Transform3D
 var _to_xform: Transform3D
+## Where the current trip is headed, so an arrival can still be completed if the
+## tween disappears out from under it.
+var _travel_target: int = -1
 
 
 func _ready() -> void:
@@ -39,6 +45,16 @@ func resolve_track() -> CameraTrack:
 	if track == null:
 		track = get_tree().get_first_node_in_group(CameraTrack.GROUP) as CameraTrack
 	return track
+
+
+func _process(_delta: float) -> void:
+	# Safety net. A tween can be killed by anything that touches this node, and
+	# losing one mid-trip would strand the rail between stops with no arrival
+	# ever reported, which reads as "the camera stopped moving" and nothing else.
+	if _travel_target >= 0 and is_travelling and (_tween == null or not _tween.is_valid()):
+		if log_travel:
+			print("[rail] tween vanished mid-travel, landing at %d anyway" % _travel_target)
+		_on_tween_finished(_travel_target)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -79,19 +95,28 @@ func travel_to(index: int) -> void:
 	var duration := maxf(stop.travel_time, 0.001)
 	EventBus.travel_started.emit(from_index, index, duration)
 
+	_travel_target = index
 	_tween = create_tween()
 	_tween.set_trans(stop.travel_trans)
 	_tween.set_ease(stop.travel_ease)
 	_tween.tween_method(_apply_progress, 0.0, 1.0, duration)
 	_tween.finished.connect(_on_tween_finished.bind(index))
+	if log_travel:
+		print("[rail] travel %d -> %d over %.2fs, from %s to %s"
+				% [from_index, index, duration, _from_xform.origin, _to_xform.origin])
 
 
 ## Moves to the next stop. Past the last one the rail is done: travel_finished
 ## reports -1 so the run can be wrapped up.
 func advance() -> void:
-	if resolve_track() == null or current_index + 1 >= track.stop_count():
+	var count := 0 if resolve_track() == null else track.stop_count()
+	if log_travel:
+		print("[rail] advance() from index %d of %d stops" % [current_index, count])
+	if track == null or current_index + 1 >= count:
 		_kill_tween()
 		is_travelling = false
+		if log_travel:
+			print("[rail] end of rail, reporting travel_finished(-1)")
 		EventBus.travel_finished.emit(-1)
 		return
 	travel_to(current_index + 1)
@@ -114,10 +139,13 @@ func _apply_progress(t: float) -> void:
 func _on_tween_finished(index: int) -> void:
 	_tween = null
 	is_travelling = false
+	_travel_target = -1
 	current_index = index
 	# Land on the exact authored transform rather than the last interpolated
 	# step, so a stop's framing is pixel-identical every time it is visited.
 	global_transform = _to_xform
+	if log_travel:
+		print("[rail] arrived at %d, rig now at %s" % [index, global_position])
 	EventBus.travel_finished.emit(index)
 
 
