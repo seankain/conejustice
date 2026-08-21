@@ -31,8 +31,16 @@ extends Marker3D
 ## its own approach, so retiming one leg never touches its neighbours.
 @export_range(0.0, 10.0, 0.1) var travel_time: float = 2.5
 
-@export var travel_trans: Tween.TransitionType = Tween.TRANS_CUBIC
-@export var travel_ease: Tween.EaseType = Tween.EASE_IN_OUT
+## Stored as plain ints rather than Tween.TransitionType / Tween.EaseType.
+## The values match those enums one for one; the named types are avoided here
+## because exporting an engine enum is the kind of thing that stops a script
+## compiling, and a CameraStop that fails to compile takes the whole rail with it.
+@export_enum("Linear", "Sine", "Quint", "Quart", "Quad", "Expo", "Elastic",
+		"Cubic", "Circ", "Bounce", "Back", "Spring")
+var travel_trans: int = Tween.TRANS_CUBIC
+
+@export_enum("In", "Out", "InOut", "OutIn")
+var travel_ease: int = Tween.EASE_IN_OUT
 
 
 ## The transform the camera parks at: this marker, already aimed at

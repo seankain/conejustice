@@ -51,7 +51,8 @@ func _unhandled_input(event: InputEvent) -> void:
 func snap_to(index: int) -> void:
 	_kill_tween()
 	if _get_stop(index) == null:
-		push_error("CameraRig.snap_to: no stop at index %d." % index)
+		var where := "no track found" if track == null else "%d stops" % track.stop_count()
+		push_error("CameraRig.snap_to: no stop at index %d (%s)." % [index, where])
 		return
 	_place_at(index)
 	is_travelling = false

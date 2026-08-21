@@ -22,6 +22,22 @@ func _enter_tree() -> void:
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		child_order_changed.connect(update_configuration_warnings)
+		return
+
+	# Report a dead rail once, here, rather than letting every later call quietly
+	# return null. An empty stop list means the camera never moves and no section
+	# ever arms, which on its own gives no clue where to look.
+	if get_stops().is_empty():
+		var markers := 0
+		for child in get_children():
+			if child is Marker3D:
+				markers += 1
+		if markers > 0:
+			push_error(("CameraTrack '%s': %d Marker3D children but none are " % [name, markers])
+					+ "CameraStop. The markers are there, so CameraStop.gd is not "
+					+ "attaching. Check the Output panel for a parse error in it.")
+		else:
+			push_error("CameraTrack '%s' has no CameraStop children at all." % name)
 
 
 ## Every stop on the track, in travel order.
