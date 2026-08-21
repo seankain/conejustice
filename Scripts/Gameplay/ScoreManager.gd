@@ -19,6 +19,10 @@ extends Node
 ## same and a good run feels no different from a lucky one.
 @export var combo_max: int = 4
 
+## Height above a car's origin that a score popup floats from, roughly where a
+## cone comes to rest on the bodywork.
+@export var popup_height: float = 1.2
+
 ## Current multiplier, 1 through combo_max.
 var combo: int = 1
 
@@ -55,6 +59,8 @@ func _on_cone_landed(car: Node3D, on_roof: bool) -> void:
 	var awarded := base * combo
 	_push_award(car, awarded)
 	_award(awarded)
+	# This is the only place that knows both the amount and where it was earned.
+	EventBus.score_popup.emit(awarded, car.global_position + Vector3.UP * popup_height)
 	combo = mini(combo + 1, combo_max)
 
 

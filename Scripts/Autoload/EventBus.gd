@@ -2,14 +2,18 @@ extends Node
 ## Signal-only bus. The one place systems are allowed to talk to each other.
 ##
 ## The full set is declared up front so later phases connect rather than edit.
-## Rule of thumb: gameplay emits, the HUD only ever listens. If a HUD script
-## reaches into a gameplay node, that is a bug in the HUD.
+## Rule of thumb: gameplay emits, the HUD only ever listens. The HUD may read
+## a node it was handed for display -- markers need car positions -- but it
+## never drives gameplay.
 
 # --- Section lifecycle (SectionManager, SectionTimer) ---
 
 ## A fresh run has begun. Score, combo and per-run state reset here.
 signal run_started()
 
+## The cars for this section, armed and reset, just before it goes live. Held
+## as a plain Array so this autoload does not depend on the TargetCar class.
+signal section_armed(cars: Array)
 ## Camera has arrived and the section is live. [param time_limit] is in seconds.
 signal section_started(index: int, time_limit: float)
 ## Every target car at this stop is coned.
@@ -37,17 +41,23 @@ signal car_coned(car: Node3D)
 
 # --- Throwing and the magazine (ConeThrower) ---
 
-signal cone_thrown(remaining: int)
+## [param cooldown] lets the crosshair show the recovery rather than guessing
+## at a duration that would drift the moment the cooldown is retuned.
+signal cone_thrown(remaining: int, cooldown: float)
 signal magazine_changed(remaining: int, capacity: int)
 ## [param duration] lets the magazine widget pace its refill against the real
 ## reload time instead of hardcoding one.
 signal reload_started(duration: float)
+## Reloading has stopped, either by completing or by being cancelled when a
+## section ended under it. Either way, nothing is reloading now.
 signal reload_finished()
 
 # --- Score and clock (ScoreManager, SectionTimer) ---
 
-## [param delta] is carried so the HUD can float a "+250" at the hit location.
 signal score_changed(total: int, delta: int)
+## An award worth showing where it was earned. Emitted by ScoreManager, which
+## is the only place that knows both the amount and the car it came from.
+signal score_popup(amount: int, world_position: Vector3)
 signal timer_tick(seconds_remaining: float)
 ## One-shot as the clock crosses into the danger zone, so the HUD and audio do
 ## not each re-derive the threshold.

@@ -27,9 +27,13 @@ extends Node
 
 @export_group("Magazine")
 @export var mag_size: int = 6
-## Refill instantly on the reload action. Temporary: the timed reload with its
-## lockout replaces this, at which point this should go off.
-@export var debug_instant_reload: bool = true
+## Seconds a reload takes, during which throwing is blocked. The reserve is
+## infinite, exactly as in Time Crisis: a reload costs time, not ammunition,
+## and that cost is what makes the 60 second limit bite.
+@export var reload_time: float = 0.9
+## Off by default. Forgetting to reload should be a mistake the player makes,
+## not something the game quietly covers for.
+@export var auto_reload_on_empty: bool = false
 
 @export_group("Performance")
 ## Live cones allowed before the oldest unscored one is culled. A full run can
@@ -39,16 +43,16 @@ extends Node
 ## Cones left in the magazine.
 var remaining: int = 0
 
-## Set while a reload is running; blocks throwing. Owned by the reload phase.
+## Set while a reload is running; blocks throwing.
 var is_reloading: bool = false
 
+var _reload_left: float = 0.0
 var _cooldown_left: float = 0.0
 var _live_cones: Array[ConeBody] = []
 
 
 func _ready() -> void:
-	# The cursor is the aiming device, so it stays visible.
-	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	# Mouse mode belongs to Crosshair, which draws the replacement cursor.
 	remaining = mag_size
 	# Deferred: the HUD is built after this node in the tree, so announcing the
 	# magazine right here would broadcast it to nobody and leave the row empty.
@@ -59,12 +63,28 @@ func _process(delta: float) -> void:
 	if _cooldown_left > 0.0:
 		_cooldown_left = maxf(_cooldown_left - delta, 0.0)
 
+	if not is_reloading:
+		return
+	# A reload belongs to the section it started in. Letting one run on through
+	# the travel tween would hand the next section a magazine it did not pay for.
+	if GameState.run_state != GameState.RunState.ENGAGED:
+		cancel_reload()
+		return
+	_reload_left = maxf(_reload_left - delta, 0.0)
+	if _reload_left <= 0.0:
+		_finish_reload()
+
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("throw_cone"):
 		try_throw()
-	elif debug_instant_reload and event.is_action_pressed("reload"):
-		refill()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("reload"):
+		try_reload()
+		# Handled here so nothing else in the tree acts on it. This does not
+		# stop the browser's own context menu on right click: that is the web
+		# shell's job, and it only shows up in a real export, not the editor.
+		get_viewport().set_input_as_handled()
 
 
 ## True when a throw would actually happen right now.
@@ -81,13 +101,48 @@ func can_throw() -> bool:
 ## queued: a click that arrives during a reload should feel like a mistake.
 func try_throw() -> bool:
 	if not can_throw():
+		if auto_reload_on_empty and remaining <= 0:
+			try_reload()
 		return false
 	_spawn_cone()
 	remaining -= 1
 	_cooldown_left = throw_cooldown
-	EventBus.cone_thrown.emit(remaining)
+	EventBus.cone_thrown.emit(remaining, throw_cooldown)
 	EventBus.magazine_changed.emit(remaining, mag_size)
 	return true
+
+
+## Starts a reload. Refused when one is already running, when the magazine is
+## already full, or when the run is not live.
+func try_reload() -> bool:
+	if is_reloading or remaining >= mag_size:
+		return false
+	if GameState.run_state != GameState.RunState.ENGAGED:
+		return false
+	is_reloading = true
+	_reload_left = reload_time
+	# Emitted with the real duration so the magazine widget paces its refill
+	# against the lockout instead of hardcoding one.
+	EventBus.reload_started.emit(reload_time)
+	return true
+
+
+## Stops a running reload without filling the magazine.
+func cancel_reload() -> void:
+	if not is_reloading:
+		return
+	is_reloading = false
+	_reload_left = 0.0
+	EventBus.reload_finished.emit()
+	EventBus.magazine_changed.emit(remaining, mag_size)
+
+
+func _finish_reload() -> void:
+	is_reloading = false
+	_reload_left = 0.0
+	remaining = mag_size
+	EventBus.reload_finished.emit()
+	EventBus.magazine_changed.emit(remaining, mag_size)
 
 
 ## Re-announces magazine state. Anything that builds its display from the
@@ -98,8 +153,8 @@ func announce_magazine() -> void:
 
 ## Fills the magazine. The reload phase calls this when its timer completes.
 func refill() -> void:
-	if remaining == mag_size:
-		return
+	cancel_reload()
+	_cooldown_left = 0.0
 	remaining = mag_size
 	EventBus.magazine_changed.emit(remaining, mag_size)
 

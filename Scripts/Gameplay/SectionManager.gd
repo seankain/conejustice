@@ -118,6 +118,9 @@ func _on_travel_finished(index: int) -> void:
 	GameState.section_index = index
 	GameState.run_state = GameState.RunState.ENGAGED
 	_time_remaining = stop.time_limit
+	# Armed before started, so anything drawing the targets has them in hand by
+	# the time the section is live. Duplicated so a listener cannot reorder ours.
+	EventBus.section_armed.emit(_armed.duplicate())
 	EventBus.section_started.emit(index, stop.time_limit)
 
 
