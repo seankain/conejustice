@@ -11,11 +11,7 @@ extends Node3D
 @onready var hud: HUD = $HUD
 
 
-## Temporary: the title screen starts the run once it exists. Until then Main
-## starts it directly so the game is playable from F5.
-@export var auto_start_run: bool = true
-
-
 func _ready() -> void:
-	if auto_start_run:
-		section_manager.start_run()
+	# The title screen starts the run. Main only makes sure the state behind it
+	# is clean, so the first frame never shows a stale score from a hot reload.
+	GameState.reset_run()

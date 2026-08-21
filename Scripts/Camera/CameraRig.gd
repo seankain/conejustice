@@ -76,12 +76,13 @@ func travel_to(index: int) -> void:
 	# The rig only ever sets TRAVELLING. SectionManager owns the transition out
 	# of it on arrival, since only it knows whether a section armed or the run ended.
 	GameState.run_state = GameState.RunState.TRAVELLING
-	EventBus.travel_started.emit(from_index, index)
+	var duration := maxf(stop.travel_time, 0.001)
+	EventBus.travel_started.emit(from_index, index, duration)
 
 	_tween = create_tween()
 	_tween.set_trans(stop.travel_trans)
 	_tween.set_ease(stop.travel_ease)
-	_tween.tween_method(_apply_progress, 0.0, 1.0, maxf(stop.travel_time, 0.001))
+	_tween.tween_method(_apply_progress, 0.0, 1.0, duration)
 	_tween.finished.connect(_on_tween_finished.bind(index))
 
 

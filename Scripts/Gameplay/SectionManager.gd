@@ -32,6 +32,7 @@ var _time_remaining: float = 0.0
 
 func _ready() -> void:
 	_resolve_track()
+	EventBus.start_run_requested.connect(start_run)
 	EventBus.travel_finished.connect(_on_travel_finished)
 	EventBus.section_timeout.connect(_on_section_timeout)
 	# The clock is owned by SectionTimer; this only mirrors it so the clear
@@ -81,19 +82,19 @@ func _on_travel_finished(index: int) -> void:
 	_disarm()
 
 	if index < 0:
-		# The rail ran off its last stop: the run is won.
-		GameState.run_state = GameState.RunState.RUN_OVER
+		# The rail ran off its last stop: every section was cleared.
+		_end_run(true)
 		return
 
 	var current_track := _resolve_track()
 	if current_track == null:
 		push_error("SectionManager: no CameraTrack found.")
-		GameState.run_state = GameState.RunState.RUN_OVER
+		_end_run(false)
 		return
 
 	var stop := current_track.get_stop(index)
 	if stop == null:
-		GameState.run_state = GameState.RunState.RUN_OVER
+		_end_run(false)
 		return
 
 	for car in stop.get_target_cars():
@@ -142,8 +143,17 @@ func _on_car_fully_coned(_car: TargetCar) -> void:
 
 
 func _on_section_timeout(_index: int) -> void:
+	_end_run(false)
+
+
+## The single exit from a run, so no ending can forget to disarm or to say
+## whether it was won.
+func _end_run(won: bool) -> void:
+	if GameState.run_state == GameState.RunState.RUN_OVER:
+		return
 	_disarm()
 	GameState.run_state = GameState.RunState.RUN_OVER
+	EventBus.run_over.emit(won)
 
 
 func _disarm() -> void:

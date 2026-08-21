@@ -21,15 +21,29 @@ var _radius: float = 11.0:
 var _tween: Tween
 
 
+var _aiming: bool = false
+
+
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_radius = idle_radius
-	if hide_system_cursor:
-		Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
+	visible = false
 	EventBus.cone_thrown.connect(_on_cone_thrown)
 
 
 func _process(_delta: float) -> void:
+	# The reticle replaces the cursor only while there is something to aim at.
+	# On the title and run-over screens the system cursor comes back, or the
+	# player would be clicking buttons they cannot see the pointer on.
+	var aiming := GameState.run_state == GameState.RunState.ENGAGED
+	if aiming != _aiming:
+		_aiming = aiming
+		visible = aiming
+		if hide_system_cursor:
+			Input.set_mouse_mode(
+					Input.MOUSE_MODE_HIDDEN if aiming else Input.MOUSE_MODE_VISIBLE)
+	if not aiming:
+		return
 	# The cursor moves without emitting anything this node can hook, so the
 	# position is read every frame rather than pushed.
 	queue_redraw()

@@ -77,7 +77,12 @@ func _on_car_coned(_car: Node3D) -> void:
 
 
 func _on_section_cleared(_index: int, time_remaining: float) -> void:
-	_award(points_section_cleared + floori(maxf(time_remaining, 0.0)) * points_per_second_left)
+	var seconds := floori(maxf(time_remaining, 0.0))
+	var total := points_section_cleared + seconds * points_per_second_left
+	_award(total)
+	# Broken out so the transition can count the bonus up without knowing, or
+	# duplicating, any of the rules above.
+	EventBus.section_bonus.emit(seconds, total)
 	combo = 1
 
 

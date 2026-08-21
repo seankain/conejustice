@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://Scripts/UI/HUD.gd" id="1_hud"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/ConeMagazine.tscn" id="2_mag"]
 [ext_resource type="Script" path="res://Scripts/UI/TargetMarkers.gd" id="3_markers"]
 [ext_resource type="Script" path="res://Scripts/UI/Crosshair.gd" id="4_cross"]
+[ext_resource type="Script" path="res://Scripts/UI/SectionTransition.gd" id="5_trans"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -87,6 +88,14 @@ offset_top = -104.0
 offset_right = 268.0
 offset_bottom = -24.0
 grow_vertical = 0
+
+[node name="SectionTransition" type="Control" parent="Root"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("5_trans")
 
 [node name="Crosshair" type="Control" parent="Root"]
 anchor_right = 1.0
