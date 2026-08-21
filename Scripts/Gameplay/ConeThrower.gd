@@ -101,8 +101,10 @@ func can_throw() -> bool:
 ## queued: a click that arrives during a reload should feel like a mistake.
 func try_throw() -> bool:
 	if not can_throw():
-		if auto_reload_on_empty and remaining <= 0:
-			try_reload()
+		if remaining <= 0 and not is_reloading:
+			EventBus.throw_refused_empty.emit()
+			if auto_reload_on_empty:
+				try_reload()
 		return false
 	_spawn_cone()
 	remaining -= 1

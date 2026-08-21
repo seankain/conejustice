@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 GameState="*res://Scripts/Autoload/GameState.gd"
 EventBus="*res://Scripts/Autoload/EventBus.gd"
+SfxPlayer="*res://Scripts/Audio/SfxPlayer.gd"
 
 [dotnet]
 

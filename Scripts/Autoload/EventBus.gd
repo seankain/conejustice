@@ -45,6 +45,9 @@ signal cone_landed(car: Node3D, on_roof: bool)
 signal cone_unlanded(car: Node3D, on_roof: bool)
 ## A thrown cone came to rest without landing on a car. Breaks the combo.
 signal cone_missed()
+## A cone struck something hard enough to be worth hearing. Rate limited at the
+## cone before it ever reaches the bus.
+signal cone_impact(position: Vector3, speed: float, on_car: bool)
 ## A car has reached its required cone count. Fires once per car per run.
 signal car_coned(car: Node3D)
 
@@ -56,6 +59,9 @@ signal cone_thrown(remaining: int, cooldown: float)
 signal magazine_changed(remaining: int, capacity: int)
 ## [param duration] lets the magazine widget pace its refill against the real
 ## reload time instead of hardcoding one.
+## A throw was refused because the magazine is empty. The click that answers it
+## is the game telling the player why nothing happened.
+signal throw_refused_empty()
 signal reload_started(duration: float)
 ## Reloading has stopped, either by completing or by being cancelled when a
 ## section ended under it. Either way, nothing is reloading now.

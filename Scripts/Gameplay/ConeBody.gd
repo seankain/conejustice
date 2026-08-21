@@ -29,6 +29,13 @@ extends RigidBody3D
 ## Speed below which a cone counts as at rest, in m/s.
 @export var miss_settle_speed: float = 0.35
 
+@export_group("Impact audio")
+## Slower contacts than this are not worth a sound.
+@export var impact_min_speed: float = 1.2
+## Minimum seconds between this cone's own impact sounds. A cone rattling to a
+## stop touches down many times; without this it would fire a clatter for each.
+@export var impact_min_interval: float = 0.12
+
 ## Set by TargetCar once this cone counts toward a car. Keeps it out of the
 ## despawn timer and out of the thrower's live-cone cull.
 var is_scored: bool = false
@@ -41,9 +48,21 @@ var _age: float = 0.0
 ## A throw resolves exactly once, as a landing or as a miss.
 var _resolved: bool = false
 var _rest_time: float = 0.0
+## Speed at the top of the physics frame, i.e. before any contact this frame
+## resolved. Reading linear_velocity inside body_entered gives the post-bounce
+## value, which is not what the impact sounded like.
+var _speed_before_contact: float = 0.0
+var _next_impact_at: float = 0.0
+
+
+func _ready() -> void:
+	body_entered.connect(_on_body_entered)
 
 
 func _physics_process(delta: float) -> void:
+	var speed := linear_velocity.length()
+	_speed_before_contact = speed
+
 	if global_position.y < kill_below_y:
 		# Out of the world: a miss, and not a close one.
 		_resolve_miss()
@@ -57,7 +76,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	if not _resolved:
-		if linear_velocity.length() < miss_settle_speed:
+		if speed < miss_settle_speed:
 			_rest_time += delta
 			if _rest_time >= miss_settle_time:
 				_resolve_miss()
@@ -67,6 +86,16 @@ func _physics_process(delta: float) -> void:
 	_age += delta
 	if _age >= despawn_time:
 		queue_free()
+
+
+func _on_body_entered(body: Node) -> void:
+	if _speed_before_contact < impact_min_speed:
+		return
+	var now := Time.get_ticks_msec() / 1000.0
+	if now < _next_impact_at:
+		return
+	_next_impact_at = now + impact_min_interval
+	EventBus.cone_impact.emit(global_position, _speed_before_contact, body is TargetCar)
 
 
 ## Settles the throw without scoring it and without calling it a miss. Used for
