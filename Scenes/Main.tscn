@@ -1,52 +1,58 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene format=3 uid="uid://chl7vym4f3n42"]
 
-[ext_resource type="Script" path="res://Scripts/Main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://8esur1anjccy" path="res://Scripts/Main.gd" id="1_main"]
 [ext_resource type="PackedScene" uid="uid://b83jpag3jxn6p" path="res://Scenes/level.tscn" id="2_level"]
-[ext_resource type="Script" path="res://Scripts/Camera/CameraRig.gd" id="3_rig"]
+[ext_resource type="Script" uid="uid://4ah8xrtd0ofv" path="res://Scripts/Camera/CameraRig.gd" id="3_rig"]
 [ext_resource type="PackedScene" uid="uid://1cxf4358vnjj" path="res://Scenes/Cone.tscn" id="4_cone"]
-[ext_resource type="Script" path="res://Scripts/Gameplay/ConeThrower.gd" id="5_thrower"]
-[ext_resource type="Script" path="res://Scripts/Gameplay/SectionManager.gd" id="6_section"]
-[ext_resource type="Script" path="res://Scripts/Gameplay/SectionTimer.gd" id="7_timer"]
-[ext_resource type="Script" path="res://Scripts/Gameplay/ScoreManager.gd" id="8_score"]
+[ext_resource type="Script" uid="uid://bilpe1o1sd81" path="res://Scripts/Gameplay/ConeThrower.gd" id="5_thrower"]
+[ext_resource type="Script" uid="uid://mhaw62c8y8mj" path="res://Scripts/Gameplay/SectionManager.gd" id="6_section"]
+[ext_resource type="Script" uid="uid://gelak008vlyd" path="res://Scripts/Gameplay/SectionTimer.gd" id="7_timer"]
+[ext_resource type="Script" uid="uid://dw1s0if5bv06" path="res://Scripts/Gameplay/ScoreManager.gd" id="8_score"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/HUD.tscn" id="9_hud"]
-[ext_resource type="Script" path="res://Scripts/Gameplay/RunStats.gd" id="10_stats"]
+[ext_resource type="Script" uid="uid://d38xi5uyfhjnq" path="res://Scripts/Gameplay/RunStats.gd" id="10_stats"]
 [ext_resource type="PackedScene" path="res://Scenes/UI/Screens.tscn" id="11_screens"]
 
-[node name="Main" type="Node3D"]
+[node name="Main" type="Node3D" unique_id=719140278]
 script = ExtResource("1_main")
 
-[node name="Level" parent="." instance=ExtResource("2_level")]
+[node name="Level" parent="." unique_id=1177097842 instance=ExtResource("2_level")]
 
-[node name="CameraRig" type="Node3D" parent="."]
+[node name="CameraRig" type="Node3D" parent="." unique_id=977427851]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -18.901833, 0.91824365, -6.442863)
 script = ExtResource("3_rig")
 debug_advance_with_ui_accept = false
 
-[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+[node name="Camera3D" type="Camera3D" parent="CameraRig" unique_id=1916185128]
 current = true
 
-[node name="Cones" type="Node3D" parent="."]
+[node name="Cones" type="Node3D" parent="." unique_id=828286377]
 
-[node name="ConeThrower" type="Node" parent="."]
+[node name="ConeThrower" type="Node" parent="." unique_id=569874461 node_paths=PackedStringArray("camera", "cone_container")]
 script = ExtResource("5_thrower")
 cone_scene = ExtResource("4_cone")
 camera = NodePath("../CameraRig/Camera3D")
 cone_container = NodePath("../Cones")
 
-[node name="SectionManager" type="Node" parent="."]
+[node name="ConeThrower2" type="Node" parent="." unique_id=1568094365 node_paths=PackedStringArray("camera", "cone_container")]
+script = ExtResource("5_thrower")
+cone_scene = ExtResource("4_cone")
+camera = NodePath("../CameraRig/Camera3D")
+cone_container = NodePath("../Cones")
+
+[node name="SectionManager" type="Node" parent="." unique_id=2043024193 node_paths=PackedStringArray("rig")]
 script = ExtResource("6_section")
 rig = NodePath("../CameraRig")
 thrower = NodePath("../ConeThrower")
 
-[node name="SectionTimer" type="Node" parent="SectionManager"]
+[node name="SectionTimer" type="Node" parent="SectionManager" unique_id=1051064086]
 script = ExtResource("7_timer")
 
-[node name="ScoreManager" type="Node" parent="."]
+[node name="ScoreManager" type="Node" parent="." unique_id=1223813610]
 script = ExtResource("8_score")
 
-[node name="RunStats" type="Node" parent="."]
+[node name="RunStats" type="Node" parent="." unique_id=1376181104]
 script = ExtResource("10_stats")
 
-[node name="HUD" parent="." instance=ExtResource("9_hud")]
+[node name="HUD" parent="." unique_id=189490566 instance=ExtResource("9_hud")]
 
-[node name="Screens" parent="." instance=ExtResource("11_screens")]
+[node name="Screens" parent="." unique_id=1537528613 instance=ExtResource("11_screens")]
