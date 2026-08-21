@@ -1,0 +1,21 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Main.gd" id="1_main"]
+[ext_resource type="PackedScene" uid="uid://b83jpag3jxn6p" path="res://Scenes/level.tscn" id="2_level"]
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_main")
+
+[node name="Level" parent="." instance=ExtResource("2_level")]
+
+[node name="CameraRig" type="Node3D" parent="."]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -18.901833, 0.91824365, -6.442863)
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+current = true
+
+[node name="ConeThrower" type="Node" parent="."]
+
+[node name="SectionManager" type="Node" parent="."]
+
+[node name="HUD" type="CanvasLayer" parent="."]

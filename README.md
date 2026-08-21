@@ -26,11 +26,16 @@ you'll watch your cone clatter off into the gutter.
 ## Project layout
 
 ```
-Scenes/       Game scenes — Cone, SUV, Tree1, level
+Scenes/       Game scenes — Main (game root), level, Cone, SUV, Tree1
+Scripts/      GDScript — Autoload/ (GameState, EventBus), Camera/, Gameplay/, UI/
 ThirdParty/   Third-party models and textures (cars, building, trees, skybox)
+docs/         Design and implementation notes
 project.godot Godot project configuration
 export_presets.cfg  Web export preset
 ```
+
+`Scenes/Main.tscn` is the main scene: it composes the level, the camera rig, the
+gameplay nodes and the HUD. `Scenes/level.tscn` is scenery and targets only.
 
 ## Running locally
 
