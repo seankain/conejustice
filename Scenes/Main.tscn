@@ -12,6 +12,7 @@ script = ExtResource("1_main")
 [node name="CameraRig" type="Node3D" parent="."]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -18.901833, 0.91824365, -6.442863)
 script = ExtResource("3_rig")
+track = NodePath("../Level/CameraTrack")
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig"]
 current = true
