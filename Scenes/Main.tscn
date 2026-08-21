@@ -1,8 +1,10 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://Scripts/Main.gd" id="1_main"]
 [ext_resource type="PackedScene" uid="uid://b83jpag3jxn6p" path="res://Scenes/level.tscn" id="2_level"]
 [ext_resource type="Script" path="res://Scripts/Camera/CameraRig.gd" id="3_rig"]
+[ext_resource type="PackedScene" uid="uid://1cxf4358vnjj" path="res://Scenes/Cone.tscn" id="4_cone"]
+[ext_resource type="Script" path="res://Scripts/Gameplay/ConeThrower.gd" id="5_thrower"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
@@ -17,7 +19,13 @@ track = NodePath("../Level/CameraTrack")
 [node name="Camera3D" type="Camera3D" parent="CameraRig"]
 current = true
 
+[node name="Cones" type="Node3D" parent="."]
+
 [node name="ConeThrower" type="Node" parent="."]
+script = ExtResource("5_thrower")
+cone_scene = ExtResource("4_cone")
+camera = NodePath("../CameraRig/Camera3D")
+cone_container = NodePath("../Cones")
 
 [node name="SectionManager" type="Node" parent="."]
 
