@@ -6,8 +6,10 @@ extends Node3D
 ## keeps "where the camera is" in exactly one place, and means nothing has to
 ## reach through to the camera to move it.
 
-## The rail to follow. Lives inside the level scene, so it is wired in the
-## editor rather than looked up by path.
+## The rail to follow. Usually left empty: the track lives inside the instanced
+## level scene, which an exported node reference cannot reach from here, so it
+## is found through CameraTrack.GROUP instead. Set this only when the track and
+## the rig are in the same scene.
 @export var track: CameraTrack
 
 ## Temporary: advance the rail with ui_accept (Space/Enter) so the track is
@@ -24,11 +26,19 @@ var _to_xform: Transform3D
 
 
 func _ready() -> void:
+	resolve_track()
 	# Place silently at the first stop so the level looks right on load. No
 	# signal here: emitting travel_finished during _ready would fire before
 	# SectionManager has connected, and the first section would never arm.
 	if track != null and track.stop_count() > 0:
 		_place_at(0)
+
+
+## Returns the track, finding it by group the first time if it was not wired.
+func resolve_track() -> CameraTrack:
+	if track == null:
+		track = get_tree().get_first_node_in_group(CameraTrack.GROUP) as CameraTrack
+	return track
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -77,7 +87,7 @@ func travel_to(index: int) -> void:
 ## Moves to the next stop. Past the last one the rail is done: travel_finished
 ## reports -1 so the run can be wrapped up.
 func advance() -> void:
-	if track == null or current_index + 1 >= track.stop_count():
+	if resolve_track() == null or current_index + 1 >= track.stop_count():
 		_kill_tween()
 		is_travelling = false
 		EventBus.travel_finished.emit(-1)
@@ -126,6 +136,6 @@ func _kill_tween() -> void:
 
 
 func _get_stop(index: int) -> CameraStop:
-	if track == null:
+	if resolve_track() == null:
 		return null
 	return track.get_stop(index)

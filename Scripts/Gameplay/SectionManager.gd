@@ -14,6 +14,9 @@ extends Node
 ## section's count, and that is a miserable bug to find later.
 
 @export var rig: CameraRig
+## Usually left empty and found through CameraTrack.GROUP: the track lives
+## inside the instanced level scene, which an exported node reference cannot
+## reach from the game root.
 @export var track: CameraTrack
 @export var thrower: ConeThrower
 
@@ -28,14 +31,25 @@ var _time_remaining: float = 0.0
 
 
 func _ready() -> void:
+	_resolve_track()
 	EventBus.travel_finished.connect(_on_travel_finished)
 	EventBus.section_timeout.connect(_on_section_timeout)
 
 
+func _resolve_track() -> CameraTrack:
+	if track == null:
+		track = get_tree().get_first_node_in_group(CameraTrack.GROUP) as CameraTrack
+	return track
+
+
 ## Starts a fresh run at the first stop.
 func start_run() -> void:
-	if track == null or rig == null:
-		push_error("SectionManager: rig and track must be assigned.")
+	if rig == null:
+		push_error("SectionManager: rig is not assigned.")
+		return
+	if _resolve_track() == null:
+		push_error("SectionManager: no CameraTrack found. Add one to the level, "
+				+ "or assign the track property directly.")
 		return
 
 	GameState.reset_run()
@@ -69,7 +83,13 @@ func _on_travel_finished(index: int) -> void:
 		GameState.run_state = GameState.RunState.RUN_OVER
 		return
 
-	var stop := track.get_stop(index)
+	var current_track := _resolve_track()
+	if current_track == null:
+		push_error("SectionManager: no CameraTrack found.")
+		GameState.run_state = GameState.RunState.RUN_OVER
+		return
+
+	var stop := current_track.get_stop(index)
 	if stop == null:
 		GameState.run_state = GameState.RunState.RUN_OVER
 		return

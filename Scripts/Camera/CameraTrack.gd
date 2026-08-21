@@ -7,6 +7,17 @@ extends Node3D
 ## tree reorders the route. Non-CameraStop children are ignored, so it is safe
 ## to park helper nodes under here.
 
+## The track joins this group so CameraRig and SectionManager can find it. They
+## live in the game root while the track lives inside the instanced level scene,
+## and an exported node reference cannot be wired across that boundary.
+const GROUP := &"camera_track"
+
+
+func _enter_tree() -> void:
+	# _enter_tree, not _ready: the whole tree enters before anything is ready,
+	# so consumers can resolve the track in their own _ready.
+	add_to_group(GROUP)
+
 
 func _ready() -> void:
 	if Engine.is_editor_hint():

@@ -15,7 +15,6 @@ script = ExtResource("1_main")
 [node name="CameraRig" type="Node3D" parent="."]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -18.901833, 0.91824365, -6.442863)
 script = ExtResource("3_rig")
-track = NodePath("../Level/CameraTrack")
 debug_advance_with_ui_accept = false
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig"]
@@ -32,7 +31,6 @@ cone_container = NodePath("../Cones")
 [node name="SectionManager" type="Node" parent="."]
 script = ExtResource("6_section")
 rig = NodePath("../CameraRig")
-track = NodePath("../Level/CameraTrack")
 thrower = NodePath("../ConeThrower")
 
 [node name="HUD" type="CanvasLayer" parent="."]
