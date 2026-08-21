@@ -88,10 +88,15 @@ func reset() -> void:
 
 
 func _on_catcher_body_entered(body: Node3D) -> void:
-	if _latched:
-		return
 	var cone := body as ConeBody
-	if cone == null or _counted.has(cone) or _candidates.has(cone):
+	if cone == null:
+		return
+	if _latched:
+		# This car is already done. The throw is wasted, but it did hit a car,
+		# so it should not read as a miss and break the player's combo.
+		cone.mark_resolved()
+		return
+	if _counted.has(cone) or _candidates.has(cone):
 		return
 	_candidates[cone] = 0.0
 
@@ -128,5 +133,7 @@ func _settle(cone: ConeBody) -> void:
 	if _counted.size() >= cones_required:
 		_latched = true
 		_candidates.clear()
-		fully_coned.emit(self)
+		# car_coned first: fully_coned is what clears the section, and on the
+		# last car that would pay the section bonus before this car's award.
 		EventBus.car_coned.emit(self)
+		fully_coned.emit(self)

@@ -7,6 +7,9 @@ extends Node
 
 # --- Section lifecycle (SectionManager, SectionTimer) ---
 
+## A fresh run has begun. Score, combo and per-run state reset here.
+signal run_started()
+
 ## Camera has arrived and the section is live. [param time_limit] is in seconds.
 signal section_started(index: int, time_limit: float)
 ## Every target car at this stop is coned.
@@ -27,6 +30,8 @@ signal travel_finished(index: int)
 signal cone_landed(car: Node3D, on_roof: bool)
 ## A counted cone was knocked off again. ScoreManager reverses its award.
 signal cone_unlanded(car: Node3D, on_roof: bool)
+## A thrown cone came to rest without landing on a car. Breaks the combo.
+signal cone_missed()
 ## A car has reached its required cone count. Fires once per car per run.
 signal car_coned(car: Node3D)
 

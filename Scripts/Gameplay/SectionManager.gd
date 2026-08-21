@@ -34,6 +34,9 @@ func _ready() -> void:
 	_resolve_track()
 	EventBus.travel_finished.connect(_on_travel_finished)
 	EventBus.section_timeout.connect(_on_section_timeout)
+	# The clock is owned by SectionTimer; this only mirrors it so the clear
+	# bonus can be paid without reaching into the timer node.
+	EventBus.timer_tick.connect(_on_timer_tick)
 
 
 func _resolve_track() -> CameraTrack:
@@ -53,6 +56,7 @@ func start_run() -> void:
 		return
 
 	GameState.reset_run()
+	EventBus.run_started.emit()
 	_disarm()
 	if thrower != null:
 		thrower.clear_cones()
@@ -69,10 +73,8 @@ func start_run() -> void:
 	rig.snap_to(0)
 
 
-## Reported by SectionTimer so the clear bonus can be paid. Kept as a setter
-## rather than read back from the timer, so the timer stays a leaf.
-func set_time_remaining(seconds: float) -> void:
-	_time_remaining = seconds
+func _on_timer_tick(seconds_remaining: float) -> void:
+	_time_remaining = seconds_remaining
 
 
 func _on_travel_finished(index: int) -> void:

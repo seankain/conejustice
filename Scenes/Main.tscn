@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://Scripts/Main.gd" id="1_main"]
 [ext_resource type="PackedScene" uid="uid://b83jpag3jxn6p" path="res://Scenes/level.tscn" id="2_level"]
@@ -6,6 +6,8 @@
 [ext_resource type="PackedScene" uid="uid://1cxf4358vnjj" path="res://Scenes/Cone.tscn" id="4_cone"]
 [ext_resource type="Script" path="res://Scripts/Gameplay/ConeThrower.gd" id="5_thrower"]
 [ext_resource type="Script" path="res://Scripts/Gameplay/SectionManager.gd" id="6_section"]
+[ext_resource type="Script" path="res://Scripts/Gameplay/SectionTimer.gd" id="7_timer"]
+[ext_resource type="Script" path="res://Scripts/Gameplay/ScoreManager.gd" id="8_score"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
@@ -32,5 +34,11 @@ cone_container = NodePath("../Cones")
 script = ExtResource("6_section")
 rig = NodePath("../CameraRig")
 thrower = NodePath("../ConeThrower")
+
+[node name="SectionTimer" type="Node" parent="SectionManager"]
+script = ExtResource("7_timer")
+
+[node name="ScoreManager" type="Node" parent="."]
+script = ExtResource("8_score")
 
 [node name="HUD" type="CanvasLayer" parent="."]
