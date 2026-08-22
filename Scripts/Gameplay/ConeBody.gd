@@ -13,6 +13,10 @@ extends RigidBody3D
 ## tall), tapering from a 0.36m-wide skirt to a 0.07m tip, over a 0.51m square
 ## base plate. The origin sits at mid-height, 0.25m above the bottom of the plate.
 
+## Every live cone joins this, so a restart can sweep the world clean without
+## depending on the thrower's own bookkeeping being complete.
+const GROUP := &"cones"
+
 ## Seconds a cone may live once thrown. Scored cones ignore this: they are the
 ## scoreboard the player can see, so they stay where they landed.
 @export var despawn_time: float = 25.0
@@ -56,6 +60,7 @@ var _next_impact_at: float = 0.0
 
 
 func _ready() -> void:
+	add_to_group(GROUP)
 	body_entered.connect(_on_body_entered)
 
 

@@ -18,6 +18,9 @@ extends Node
 ## inside the instanced level scene, which an exported node reference cannot
 ## reach from the game root.
 @export var track: CameraTrack
+## Like the track, usually left empty and found through ConeThrower.GROUP. An
+## exported reference that fails to resolve leaves restarts unable to clear the
+## cones, and nothing about that failure is visible until a second run starts.
 @export var thrower: ConeThrower
 
 ## Seconds held after the last car is coned, so the player sees the cone land
@@ -50,6 +53,12 @@ func _resolve_track() -> CameraTrack:
 	return track
 
 
+func _resolve_thrower() -> ConeThrower:
+	if thrower == null:
+		thrower = get_tree().get_first_node_in_group(ConeThrower.GROUP) as ConeThrower
+	return thrower
+
+
 ## Starts a fresh run at the first stop.
 func start_run() -> void:
 	if rig == null:
@@ -63,10 +72,10 @@ func start_run() -> void:
 	GameState.reset_run()
 	EventBus.run_started.emit()
 	_disarm()
-	if thrower != null:
-		thrower.clear_cones()
-		thrower.refill()
 
+	# Cars first, then cones. reset() hands each car's cones back before they are
+	# freed, so no car is left holding a claim on a node that is about to go away.
+	#
 	# Every car on the track, not just the first stop's: a retry must not
 	# inherit cones claimed during the previous run.
 	for stop in track.get_stops():
@@ -74,6 +83,14 @@ func start_run() -> void:
 			var target := car as TargetCar
 			if target != null:
 				target.reset()
+
+	var current_thrower := _resolve_thrower()
+	if current_thrower != null:
+		current_thrower.clear_cones()
+		current_thrower.refill()
+	else:
+		push_error("SectionManager: no ConeThrower found. Cones from the previous "
+				+ "run will not be cleared.")
 
 	rig.snap_to(0)
 

@@ -33,13 +33,7 @@ cone_scene = ExtResource("4_cone")
 camera = NodePath("../CameraRig/Camera3D")
 cone_container = NodePath("../Cones")
 
-[node name="ConeThrower2" type="Node" parent="." unique_id=1568094365 node_paths=PackedStringArray("camera", "cone_container")]
-script = ExtResource("5_thrower")
-cone_scene = ExtResource("4_cone")
-camera = NodePath("../CameraRig/Camera3D")
-cone_container = NodePath("../Cones")
-
-[node name="SectionManager" type="Node" parent="." unique_id=2043024193 node_paths=PackedStringArray("rig")]
+[node name="SectionManager" type="Node" parent="." unique_id=2043024193 node_paths=PackedStringArray("rig", "thrower")]
 script = ExtResource("6_section")
 rig = NodePath("../CameraRig")
 thrower = NodePath("../ConeThrower")

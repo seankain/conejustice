@@ -4,6 +4,13 @@ extends CanvasLayer
 ##
 ## Listens to EventBus and nothing else. If a HUD script ever reaches into a
 ## gameplay node, that is a bug in the HUD.
+##
+## CenterMessage announces failures only. The section *clear* belongs to
+## SectionTransition, which already sequences the band against the real travel
+## duration: both drawing it off section_cleared put two copies of "AREA n
+## CLEAR" at screen centre, and because this label is only cleared when the next
+## section starts, the HUD's copy then sat under the travel band's heading for
+## the whole trip.
 
 ## Below this many seconds the clock shows tenths, the arcade tell that time is
 ## nearly gone. Above it, whole seconds.
@@ -15,7 +22,6 @@ extends CanvasLayer
 @export_group("Colours")
 @export var timer_normal: Color = Color(1, 1, 1)
 @export var timer_warning: Color = Color(1, 0.30, 0.25)
-@export var banner_clear: Color = Color(0.55, 1.0, 0.55)
 @export var banner_fail: Color = Color(1.0, 0.35, 0.30)
 
 @onready var _section_label: Label = $Root/TopBar/SectionLabel
@@ -31,7 +37,6 @@ var _pulse_tween: Tween
 func _ready() -> void:
 	EventBus.run_started.connect(_on_run_started)
 	EventBus.section_started.connect(_on_section_started)
-	EventBus.section_cleared.connect(_on_section_cleared)
 	EventBus.section_timeout.connect(_on_section_timeout)
 	EventBus.timer_tick.connect(_on_timer_tick)
 	EventBus.timer_warning.connect(_on_timer_warning)
@@ -56,10 +61,6 @@ func _on_section_started(index: int, _time_limit: float) -> void:
 	_clear_warning()
 	_section_label.text = "AREA %d" % (index + 1)
 	_message.text = ""
-
-
-func _on_section_cleared(index: int, _time_remaining: float) -> void:
-	_show_banner("AREA %d CLEAR" % (index + 1), banner_clear)
 
 
 func _on_section_timeout(_index: int) -> void:
