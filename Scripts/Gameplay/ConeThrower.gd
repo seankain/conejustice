@@ -5,6 +5,10 @@ extends Node
 ## This is a light-gun parody, so the cursor is the gun: throws go where the
 ## mouse points, not at screen centre.
 
+## Lets SectionManager find the thrower without an exported reference, which is
+## one scene-file typo away from silently resolving to null.
+const GROUP := &"cone_thrower"
+
 @export var cone_scene: PackedScene
 @export var camera: Camera3D
 
@@ -52,6 +56,15 @@ var _live_cones: Array[ConeBody] = []
 
 
 func _ready() -> void:
+	add_to_group(GROUP)
+	# Two throwers race for the same click and keep separate magazines and
+	# separate live-cone lists, so only one of them ever gets reset. It looks
+	# like nothing is wrong until a restart leaves the street full of cones.
+	if get_tree().get_nodes_in_group(GROUP).size() > 1:
+		push_warning("ConeThrower: %s is not the only thrower in the tree. "
+				% get_path()
+				+ "Exactly one is expected.")
+
 	# Mouse mode belongs to Crosshair, which draws the replacement cursor.
 	remaining = mag_size
 	# Deferred: the HUD is built after this node in the tree, so announcing the
@@ -162,9 +175,15 @@ func refill() -> void:
 
 
 ## Frees every live cone. Used when restarting a run.
+##
+## Swept from ConeBody.GROUP rather than from _live_cones: that array only holds
+## the cones *this* thrower spawned, and a run that leaves any cone standing is
+## worse than one that frees a cone some other node was tracking. A restart
+## means an empty street, whoever put the cones there.
 func clear_cones() -> void:
-	for cone in _live_cones:
-		if is_instance_valid(cone):
+	for node in get_tree().get_nodes_in_group(ConeBody.GROUP):
+		var cone := node as ConeBody
+		if cone != null and is_instance_valid(cone):
 			cone.queue_free()
 	_live_cones.clear()
 
