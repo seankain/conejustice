@@ -4,8 +4,8 @@
 [ext_resource type="PackedScene" uid="uid://dr5gis4wwbtx5" path="res://ThirdParty/Models/ResidentialBuilding/source/JK_Elite_test.fbx" id="2_6phgx"]
 [ext_resource type="PackedScene" uid="uid://bla4sban8el15" path="res://Scenes/SUV.tscn" id="4_81xng"]
 [ext_resource type="PackedScene" uid="uid://dwou02buhmiko" path="res://Scenes/Tree1.tscn" id="5_wqkje"]
-[ext_resource type="Script" uid="uid://cnebnni4lkvn4" path="res://Scripts/Camera/CameraTrack.gd" id="6_track"]
-[ext_resource type="Script" uid="uid://bj8oiuswxk5yd" path="res://Scripts/Camera/CameraStop.gd" id="7_stop"]
+[ext_resource type="Script" uid="uid://dvbtcwe7txjaq" path="res://Scripts/Camera/CameraTrack.gd" id="6_track"]
+[ext_resource type="Script" uid="uid://brvd6tggu4aq1" path="res://Scripts/Camera/CameraStop.gd" id="7_stop"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_0b4ue"]
 panorama = ExtResource("1_k5f4k")
@@ -59,31 +59,31 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.579258, 0, -22.677265)
 [node name="Targets" type="Node3D" parent="." unique_id=2125700756]
 
 [node name="Car1" parent="Targets" unique_id=1784487748 instance=ExtResource("4_81xng")]
-transform = Transform3D(0.9975641, 0, 0.0697565, 0, 1, 0, -0.0697565, 0, 0.9975641, -21.4, 0.0486287, 1)
+transform = Transform3D(0.7028383, 0, -0.7113496, 0, 1, 0, 0.7113496, 0, 0.7028383, -23.70001, 0.0486287, 7.0478015)
 
 [node name="Car2" parent="Targets" unique_id=1929329829 instance=ExtResource("4_81xng")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.6, 0.0486287, -2.5)
+transform = Transform3D(0.11316128, 0, -0.9935767, 0, 1, 0, 0.9935767, 0, 0.11316128, -24.6, 0.0486287, 1.5874217)
 
 [node name="Car3" parent="Targets" unique_id=851904949 instance=ExtResource("4_81xng")]
-transform = Transform3D(0.9925462, 0, -0.1218693, 0, 1, 0, 0.1218693, 0, 0.9925462, -21.4, 0.0486287, -5.5)
+transform = Transform3D(0.18995269, 0, -0.9817932, 0, 1, 0, 0.9817932, 0, 0.18995269, -24.513216, 0.0486287, -1.6634219)
 
 [node name="Car4" parent="Targets" unique_id=109672768 instance=ExtResource("4_81xng")]
-transform = Transform3D(0.9986295, 0, 0.052336, 0, 1, 0, -0.052336, 0, 0.9986295, -24.6, 0.0486287, -9)
+transform = Transform3D(0.10772888, 0, -0.9941803, 0, 1, 0, 0.9941803, 0, 0.10772888, -22.238697, 0.0486287, -5.0106177)
 
 [node name="Car5" parent="Targets" unique_id=1793617281 instance=ExtResource("4_81xng")]
-transform = Transform3D(0.9945219, 0, 0.1045285, 0, 1, 0, -0.1045285, 0, 0.9945219, -21.4, 0.0486287, -11.8)
+transform = Transform3D(0.19633952, 0, -0.980536, 0, 1, 0, 0.980536, 0, 0.19633952, -24.497873, 0.0486287, -10.399606)
 
 [node name="Car6" parent="Targets" unique_id=551977068 instance=ExtResource("4_81xng")]
-transform = Transform3D(0.9993908, 0, -0.0348995, 0, 1, 0, 0.0348995, 0, 0.9993908, -24.6, 0.0486287, -14.5)
+transform = Transform3D(0.0628292, 0, -0.9980243, 0, 1, 0, 0.9980243, 0, 0.0628292, -23.841457, 0.0486287, -14.050251)
 
 [node name="Car7" parent="Targets" unique_id=1118032747 instance=ExtResource("4_81xng")]
-transform = Transform3D(0.9876883, 0, 0.1564345, 0, 1, 0, -0.1564345, 0, 0.9876883, -21.4, 0.0486287, -17.2)
+transform = Transform3D(-0.024203628, 0, -0.99970716, 0, 1, 0, 0.99970716, 0, -0.024203628, -23.34715, 0.0486287, -16.633404)
 
 [node name="Car8" parent="Targets" unique_id=279187247 instance=ExtResource("4_81xng")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.6, 0.0486287, -20)
+transform = Transform3D(-0.021276224, 0, -0.9997736, 0, 1, 0, 0.9997736, 0, -0.021276224, -24.6, 0.0486287, -20)
 
 [node name="Car9" parent="Targets" unique_id=566800654 instance=ExtResource("4_81xng")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -18, 0.0486287, -21.3)
+transform = Transform3D(-0.34429255, 0, -0.93886244, 0, 1, 0, 0.93886244, 0, -0.34429255, -23.336615, 0.0486287, -22.658949)
 
 [node name="CameraTrack" type="Node3D" parent="." unique_id=2110993514]
 script = ExtResource("6_track")
@@ -91,36 +91,36 @@ script = ExtResource("6_track")
 [node name="AimPoints" type="Node3D" parent="CameraTrack" unique_id=596299979]
 
 [node name="Aim0" type="Marker3D" parent="CameraTrack/AimPoints" unique_id=412267676]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.4, 1, 1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.4, 1, 5.8664727)
 
 [node name="Aim1" type="Marker3D" parent="CameraTrack/AimPoints" unique_id=1789552081]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23, 1, -4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23, 1, -1.7229056)
 
 [node name="Aim2" type="Marker3D" parent="CameraTrack/AimPoints" unique_id=160641947]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23.533333, 1, -11.766666)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23.533333, 1, -14.114651)
 
 [node name="Aim3" type="Marker3D" parent="CameraTrack/AimPoints" unique_id=777719640]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.333334, 1, -19.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.333334, 1, -20.52891)
 
 [node name="Stop0" type="Marker3D" parent="CameraTrack" unique_id=434112342]
-transform = Transform3D(0.3511234, -0.1302287, 0.9272286, 0, 0.9902805, 0.1390843, -0.9363292, -0.0488358, 0.3477107, -17.4, 1.6, 2.5)
+transform = Transform3D(0.3511234, -0.1302287, 0.9272286, 0, 0.9902805, 0.1390843, -0.9363292, -0.0488358, 0.3477107, -17.4, 1.6, 6.0118876)
 script = ExtResource("7_stop")
 target_cars = Array[NodePath]([NodePath("../../Targets/Car1")])
 cones_required = 2
 travel_time = 2.0
 
 [node name="Stop1" type="Marker3D" parent="CameraTrack" unique_id=1023698231]
-transform = Transform3D(0, -0.1065331, 0.9943092, 0, 0.9943092, 0.1065331, -1, 0, 0, -17.4, 1.6, -4)
+transform = Transform3D(0, -0.1065331, 0.9943092, 0, 0.9943092, 0.1065331, -1, 0, 0, -16.208511, 1.6, -1.4824371)
 script = ExtResource("7_stop")
 target_cars = Array[NodePath]([NodePath("../../Targets/Car2"), NodePath("../../Targets/Car3")])
 
 [node name="Stop2" type="Marker3D" parent="CameraTrack" unique_id=1311713568]
-transform = Transform3D(0.2022536, -0.0933967, 0.9748695, 0, 0.9954421, 0.0953677, -0.9793332, -0.0192885, 0.2013317, -17.4, 1.6, -10.5)
+transform = Transform3D(0.2022536, -0.0933967, 0.9748695, 0, 0.9954421, 0.0953677, -0.9793332, -0.0192885, 0.2013317, -16.90591, 1.6, -12.141826)
 script = ExtResource("7_stop")
 target_cars = Array[NodePath]([NodePath("../../Targets/Car4"), NodePath("../../Targets/Car5"), NodePath("../../Targets/Car6")])
 
 [node name="Stop3" type="Marker3D" parent="CameraTrack" unique_id=154026996]
-transform = Transform3D(0.3563246, -0.1318421, 0.9250138, 0, 0.9899948, 0.1411038, -0.9343622, -0.0502788, 0.3527595, -17.4, 1.6, -18)
+transform = Transform3D(0.3563246, -0.1318421, 0.9250138, 0, 0.9899948, 0.1411038, -0.9343622, -0.0502788, 0.3527595, -17.4, 1.6, -20.312359)
 script = ExtResource("7_stop")
 target_cars = Array[NodePath]([NodePath("../../Targets/Car7"), NodePath("../../Targets/Car8"), NodePath("../../Targets/Car9")])
 travel_time = 3.0
