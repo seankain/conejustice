@@ -1,11 +1,24 @@
 class_name TargetCar
 extends StaticBody3D
-## An illegally parked car, and the rules for deciding when it has been coned.
+## A parked car, and the rules for deciding when it has been coned.
+##
+## Not every one of these deserves a cone. [member is_violator] says whether this
+## car is parked badly enough to be fair game, and everything downstream branches
+## on it -- coning a car that is parked correctly costs the player points. The
+## detection below does not care either way: it decides when a cone has *landed*,
+## and the bus carries the violator flag out so scoring can decide what that
+## landing was worth.
 ##
 ## The hard part is telling a cone that landed from a cone that merely touched.
 ## A cone counts only once it has been overlapping the catcher *at rest* for
 ## settle_time without interruption, which is what rejects a graze: a cone that
 ## clips the bumper and rolls into the gutter is never still while touching.
+
+## Whether this car is parked illegally. Written by [ParkingLot] from the pose
+## the car was actually placed at, so it always agrees with what the player can
+## see. Defaults true so a car authored directly into a level is a target, which
+## is what a hand-placed car in this game has always meant.
+@export var is_violator: bool = true
 
 ## Cones that must settle on this car before it counts as coned. Overwritten
 ## per section by the CameraStop that owns this car.
@@ -113,7 +126,7 @@ func _on_catcher_body_exited(body: Node3D) -> void:
 	var on_roof: bool = _counted[cone]
 	_counted.erase(cone)
 	cone.release(self)
-	EventBus.cone_unlanded.emit(self, on_roof)
+	EventBus.cone_unlanded.emit(self, on_roof, is_violator)
 	progress_changed.emit(_counted.size(), cones_required)
 
 
@@ -127,13 +140,16 @@ func _settle(cone: ConeBody) -> void:
 	var on_roof := _roof.overlaps_body(cone)
 	_counted[cone] = on_roof
 	cone_settled.emit(self, on_roof)
-	EventBus.cone_landed.emit(self, on_roof)
+	EventBus.cone_landed.emit(self, on_roof, is_violator)
 	progress_changed.emit(_counted.size(), cones_required)
 
 	if _counted.size() >= cones_required:
 		_latched = true
 		_candidates.clear()
-		# car_coned first: fully_coned is what clears the section, and on the
-		# last car that would pay the section bonus before this car's award.
-		EventBus.car_coned.emit(self)
+		# The award first: fully_coned is what clears the section, and on the last
+		# car that would pay the section bonus before this car's own award.
+		if is_violator:
+			EventBus.car_coned.emit(self)
+		else:
+			EventBus.innocent_coned.emit(self)
 		fully_coned.emit(self)

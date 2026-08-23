@@ -5,6 +5,11 @@ extends CanvasLayer
 ## Listens to EventBus and nothing else. If a HUD script ever reaches into a
 ## gameplay node, that is a bug in the HUD.
 ##
+## The section label carries how many cars in the area are parked illegally.
+## That is the one thing the HUD gives away: which cars they are is the puzzle,
+## but a player with no idea how many there are cannot tell a finished area from
+## a stuck one.
+##
 ## CenterMessage announces failures only. The section *clear* belongs to
 ## SectionTransition, which already sequences the band against the real travel
 ## duration: both drawing it off section_cleared put two copies of "AREA n
@@ -24,6 +29,10 @@ extends CanvasLayer
 @export var timer_warning: Color = Color(1, 0.30, 0.25)
 @export var banner_fail: Color = Color(1.0, 0.35, 0.30)
 
+@export_group("Penalty banner")
+@export var penalty_message: String = "INNOCENT CAR!"
+@export var penalty_message_seconds: float = 1.3
+
 @onready var _section_label: Label = $Root/TopBar/SectionLabel
 @onready var _timer_label: Label = $Root/TopBar/TimerLabel
 @onready var _score_label: Label = $Root/TopBar/ScoreLabel
@@ -32,11 +41,19 @@ extends CanvasLayer
 var _displayed_score: float = 0.0
 var _score_tween: Tween
 var _pulse_tween: Tween
+## Violator count for the section about to start. section_armed carries it and
+## lands first; section_started is where the label is written.
+var _violators: int = 0
+## Bumped by every banner. A timed banner only clears the label if nothing has
+## written over it since, so a flash cannot wipe out a TIME UP that followed it.
+var _banner_serial: int = 0
 
 
 func _ready() -> void:
 	EventBus.run_started.connect(_on_run_started)
+	EventBus.section_armed.connect(_on_section_armed)
 	EventBus.section_started.connect(_on_section_started)
+	EventBus.innocent_coned.connect(_on_innocent_coned)
 	EventBus.section_timeout.connect(_on_section_timeout)
 	EventBus.timer_tick.connect(_on_timer_tick)
 	EventBus.timer_warning.connect(_on_timer_warning)
@@ -46,6 +63,8 @@ func _ready() -> void:
 
 func _reset() -> void:
 	_clear_warning()
+	_banner_serial += 1
+	_violators = 0
 	_displayed_score = 0.0
 	_score_label.text = "0"
 	_timer_label.text = "--"
@@ -57,14 +76,25 @@ func _on_run_started() -> void:
 	_reset()
 
 
+func _on_section_armed(_cars: Array, violators: int) -> void:
+	_violators = violators
+
+
 func _on_section_started(index: int, _time_limit: float) -> void:
 	_clear_warning()
 	_section_label.text = "AREA %d" % (index + 1)
+	if _violators > 0:
+		_section_label.text += "   ILLEGAL: %d" % _violators
+	_banner_serial += 1
 	_message.text = ""
 
 
 func _on_section_timeout(_index: int) -> void:
 	_show_banner("TIME UP", banner_fail)
+
+
+func _on_innocent_coned(_car: Node3D) -> void:
+	_flash_banner(penalty_message, banner_fail, penalty_message_seconds)
 
 
 func _on_timer_tick(seconds_remaining: float) -> void:
@@ -101,8 +131,19 @@ func _set_displayed_score(value: float) -> void:
 
 
 func _show_banner(text: String, colour: Color) -> void:
+	_banner_serial += 1
 	_message.text = text
 	_message.add_theme_color_override(&"font_color", colour)
+
+
+## A banner that takes itself back down. Anything written afterwards wins: the
+## serial is what stops a late flash from clearing a newer message.
+func _flash_banner(text: String, colour: Color, seconds: float) -> void:
+	_show_banner(text, colour)
+	var serial := _banner_serial
+	await get_tree().create_timer(seconds).timeout
+	if _banner_serial == serial:
+		_message.text = ""
 
 
 func _clear_warning() -> void:

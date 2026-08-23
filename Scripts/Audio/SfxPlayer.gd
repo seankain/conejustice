@@ -15,6 +15,7 @@ enum Cue {
 	CONE_GROUND,
 	SETTLED,
 	CAR_CONED,
+	PENALTY,
 	RELOAD,
 	EMPTY,
 	BEEP,
@@ -29,6 +30,7 @@ const CUE_FILES := {
 	Cue.CONE_GROUND: "cone_ground.wav",
 	Cue.SETTLED: "cone_settled.wav",
 	Cue.CAR_CONED: "car_coned.wav",
+	Cue.PENALTY: "penalty.wav",
 	Cue.RELOAD: "reload_rustle.wav",
 	Cue.EMPTY: "empty_click.wav",
 	Cue.BEEP: "low_time_beep.wav",
@@ -67,6 +69,7 @@ func _ready() -> void:
 	EventBus.cone_impact.connect(_on_cone_impact)
 	EventBus.cone_landed.connect(_on_cone_landed)
 	EventBus.car_coned.connect(_on_car_coned)
+	EventBus.innocent_coned.connect(_on_innocent_coned)
 	EventBus.reload_started.connect(_on_reload_started)
 	EventBus.throw_refused_empty.connect(_on_throw_refused_empty)
 	EventBus.timer_warning.connect(_on_timer_warning)
@@ -177,14 +180,26 @@ func _on_cone_impact(position: Vector3, speed: float, on_car: bool) -> void:
 		play_3d(Cue.CONE_GROUND, position, volume - 5.0, pitch)
 
 
-func _on_cone_landed(car: Node3D, on_roof: bool) -> void:
-	if is_instance_valid(car):
-		play_3d(Cue.SETTLED, car.global_position + Vector3.UP, 0.0, 1.18 if on_roof else 1.0)
+func _on_cone_landed(car: Node3D, on_roof: bool, on_violator: bool) -> void:
+	if not is_instance_valid(car):
+		return
+	if not on_violator:
+		# The mistake has to be audible the moment it settles, not only once the
+		# score ticks down: the player is already lining up the next throw.
+		play_ui(Cue.PENALTY, -3.0)
+		return
+	play_3d(Cue.SETTLED, car.global_position + Vector3.UP, 0.0, 1.18 if on_roof else 1.0)
 
 
 func _on_car_coned(car: Node3D) -> void:
 	if is_instance_valid(car):
 		play_3d(Cue.CAR_CONED, car.global_position + Vector3.UP)
+
+
+func _on_innocent_coned(_car: Node3D) -> void:
+	# Lower and flatter than the per-cone sting, so burying a car reads as worse
+	# rather than as the same mistake again.
+	play_ui(Cue.PENALTY, -1.0, 0.72)
 
 
 func _on_reload_started(duration: float) -> void:

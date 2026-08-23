@@ -49,6 +49,7 @@ func _on_run_over(won: bool) -> void:
 	_stats.text = "\n".join([
 		"SCORE          %d" % GameState.score,
 		"CARS CONED     %d" % GameState.cars_coned,
+		"INNOCENTS HIT  %d" % GameState.innocents_coned,
 		"CONES THROWN   %d" % GameState.cones_thrown,
 		"ACCURACY       %d%%" % roundi(GameState.accuracy() * 100.0),
 	])
