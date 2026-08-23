@@ -29,6 +29,9 @@ var section_index: int = -1
 var cones_thrown: int = 0
 var cones_landed: int = 0
 var cars_coned: int = 0
+## Correctly parked cars the player buried anyway. The run-over screen reports it
+## because a high score built on top of it is not the same run.
+var innocents_coned: int = 0
 
 
 ## Returns the run to its pre-launch state. Called on run start and on retry,
@@ -40,9 +43,11 @@ func reset_run() -> void:
 	cones_thrown = 0
 	cones_landed = 0
 	cars_coned = 0
+	innocents_coned = 0
 
 
-## Landed cones over thrown cones, 0.0 before the first throw.
+## Cones landed on illegally parked cars over cones thrown, 0.0 before the first
+## throw. Cones dropped on the innocent count against this, not for it.
 func accuracy() -> float:
 	if cones_thrown <= 0:
 		return 0.0

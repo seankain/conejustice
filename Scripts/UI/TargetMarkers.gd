@@ -1,10 +1,14 @@
 class_name TargetMarkers
 extends Control
-## Screen-space brackets over the cars this section wants coned, and the score
-## that floats off them when a cone lands.
+## Screen-space brackets over the cars this section is played against, and the
+## score that floats off them when a cone lands.
 ##
-## Without this the player cannot tell which cars are targets or how close one
-## is to being done. Rails shooters live on that readout.
+## Every car parked at the stop gets a bracket, in one neutral colour, and it
+## stays neutral until a cone settles on that car. Judging which of them is
+## parked illegally is the game -- a bracket that colours a violator on arrival
+## would answer the only question the player has been asked. What the brackets
+## are for is knowing where the cars are and how close one is to done, which is
+## exactly what a rails shooter needs and nothing more.
 ##
 ## Only the armed cars are tracked. Iterating every car in the level each frame
 ## would work today and stop working the moment the level grows.
@@ -18,10 +22,22 @@ extends Control
 @export var bracket_max_half: float = 160.0
 
 @export_group("Colours")
+## Every car starts here, whether or not it deserves a cone.
 @export var active_colour: Color = Color(1.0, 0.85, 0.30)
-@export var done_colour: Color = Color(0.45, 1.0, 0.5)
+## Shown once a cone has settled on a car and proved it was parked illegally.
+@export var violator_colour: Color = Color(0.45, 1.0, 0.5)
+## Shown once a cone has settled on a car that was parked correctly.
+@export var innocent_colour: Color = Color(1.0, 0.40, 0.35)
 @export var popup_colour: Color = Color(1.0, 0.95, 0.6)
+@export var penalty_colour: Color = Color(1.0, 0.55, 0.45)
 @export var stamp_colour: Color = Color(0.5, 1.0, 0.55)
+@export var penalty_stamp_colour: Color = Color(1.0, 0.45, 0.40)
+
+@export_group("Debug")
+## Colours brackets by what each car actually is, from the moment the section
+## arms. Off in a real run: it hands the player the answer. On while tuning bay
+## tolerances, when seeing what the game thinks is what you are checking.
+@export var reveal_violators: bool = false
 
 @export_group("Feedback")
 @export var popup_life: float = 1.1
@@ -36,6 +52,10 @@ const BRACKET_CORNERS: Array[Vector2] = [
 ]
 
 var _cars: Array[TargetCar] = []
+## Car instance id -> whether it turned out to be a violator. A car is only in
+## here once a cone has settled on it, which is the moment the player has
+## actually found out.
+var _revealed: Dictionary = {}
 ## Seconds since each car was finished, for fading its bracket out.
 var _done_age: Dictionary = {}
 ## Floating text: {text, world, age, colour, size}
@@ -49,6 +69,8 @@ func _ready() -> void:
 	EventBus.section_timeout.connect(_on_section_ended)
 	EventBus.run_started.connect(_clear)
 	EventBus.car_coned.connect(_on_car_coned)
+	EventBus.innocent_coned.connect(_on_innocent_coned)
+	EventBus.cone_landed.connect(_on_cone_landed)
 	EventBus.score_popup.connect(_on_score_popup)
 
 
@@ -99,11 +121,14 @@ func _draw_bracket(camera: Camera3D, car: TargetCar) -> void:
 	var half := clampf(absf(centre.y - top.y), bracket_min_half, bracket_max_half)
 	var half_w := half * 1.35
 
-	var colour := active_colour
 	var key := car.get_instance_id()
+	var colour := active_colour
+	if reveal_violators:
+		colour = violator_colour if car.is_violator else innocent_colour
+	elif _revealed.has(key):
+		colour = violator_colour if bool(_revealed[key]) else innocent_colour
 	if _done_age.has(key):
 		var t: float = clampf(float(_done_age[key]) / done_fade, 0.0, 1.0)
-		colour = done_colour
 		colour.a = 1.0 - t
 		if colour.a <= 0.0:
 			return
@@ -162,7 +187,7 @@ func _draw_popup(camera: Camera3D, font: Font, font_size: int, popup: Dictionary
 			HORIZONTAL_ALIGNMENT_LEFT, -1, size, colour)
 
 
-func _on_section_armed(cars: Array) -> void:
+func _on_section_armed(cars: Array, _violators: int) -> void:
 	_clear()
 	for car in cars:
 		var target := car as TargetCar
@@ -172,21 +197,44 @@ func _on_section_armed(cars: Array) -> void:
 
 func _on_section_ended(_a = null, _b = null) -> void:
 	_cars.clear()
+	_revealed.clear()
 	_done_age.clear()
 
 
+## A settled cone is how a car gives itself away, so this is where a bracket
+## earns its colour. Nothing before it: the read has to come from the car, not
+## from the HUD.
+func _on_cone_landed(car: Node3D, _on_roof: bool, on_violator: bool) -> void:
+	if car == null:
+		return
+	_revealed[car.get_instance_id()] = on_violator
+
+
 func _on_car_coned(car: Node3D) -> void:
+	_stamp(car, "CONED!", stamp_colour)
+
+
+func _on_innocent_coned(car: Node3D) -> void:
+	_stamp(car, "INNOCENT!", penalty_stamp_colour)
+
+
+func _stamp(car: Node3D, text: String, colour: Color) -> void:
 	var target := car as TargetCar
 	if target == null:
 		return
 	_done_age[target.get_instance_id()] = 0.0
-	_push(target.global_position + Vector3.UP * marker_height, "CONED!", stamp_colour, 30)
+	_push(target.global_position + Vector3.UP * marker_height, text, colour, 30)
 
 
 func _on_score_popup(amount: int, world_position: Vector3) -> void:
-	if amount <= 0:
+	if amount == 0:
 		return
-	_push(world_position, "+%d" % amount, popup_colour, 22)
+	# Negatives already carry their own sign, and they are the whole reason this
+	# no longer drops anything that is not a gain.
+	if amount > 0:
+		_push(world_position, "+%d" % amount, popup_colour, 22)
+	else:
+		_push(world_position, str(amount), penalty_colour, 22)
 
 
 func _push(world: Vector3, text: String, colour: Color, size: int) -> void:
@@ -195,6 +243,7 @@ func _push(world: Vector3, text: String, colour: Color, size: int) -> void:
 
 func _clear() -> void:
 	_cars.clear()
+	_revealed.clear()
 	_done_age.clear()
 	_popups.clear()
 	queue_redraw()

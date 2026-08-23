@@ -18,7 +18,8 @@ Drop real files in with the same names and nothing in the game changes:
 | `cone_car.wav` | `CONE_CAR` | cone strikes a target car, scaled by impact speed |
 | `cone_ground.wav` | `CONE_GROUND` | cone strikes anything else, quieter |
 | `cone_settled.wav` | `SETTLED` | a cone is counted; pitched up for a roof landing |
-| `car_coned.wav` | `CAR_CONED` | a car reaches its required cone count |
+| `car_coned.wav` | `CAR_CONED` | an illegally parked car reaches its required cone count |
+| `penalty.wav` | `PENALTY` | a cone settles on a correctly parked car, and again, pitched down, once one is buried |
 | `reload_rustle.wav` | `RELOAD` | reload starts; repitched to the real lockout |
 | `empty_click.wav` | `EMPTY` | a throw refused for an empty magazine |
 | `low_time_beep.wav` | `BEEP` | once a second under the low-time threshold |

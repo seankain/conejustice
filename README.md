@@ -3,15 +3,19 @@
 Some people park like the rules are for other people. You have a truck full of traffic cones.
 
 **Cone Justice** is a physics-based throwing game about dispensing curbside justice. Scan the
-street for cars parked where they shouldn't be — blocking hydrants, straddling two spots, parked
-across the sidewalk — then lob a traffic cone at the offender. Cones are rigid bodies, so every
-throw bounces, rolls, and topples for real. Land one on the roof for maximum justice; miss and
-you'll watch your cone clatter off into the gutter.
+street for cars parked where they shouldn't be — slewed across the lines, straddling two bays,
+nose hanging out into the road — then lob a traffic cone at the offender. Cones are rigid bodies,
+so every throw bounces, rolls, and topples for real. Land one on the roof for maximum justice;
+miss and you'll watch your cone clatter off into the gutter.
+
+Not every car deserves it. Most of the street is parked perfectly legally, and coning an innocent
+car costs you points. Look at the painted bay before you throw.
 
 ## Gameplay
 
 - Aim and throw traffic cones from a first-person view.
-- Pick your targets: only illegally parked vehicles count.
+- Pick your targets: cone the badly parked, leave the law-abiding alone.
+- The street is dealt fresh every run, so which cars are in the wrong changes each time.
 - Ragdoll-ish, fully simulated cone physics — no two throws land the same way.
 - Short, arcade-style levels set in a low-poly neighborhood street.
 
@@ -37,7 +41,9 @@ export_presets.cfg  Web export preset
 ```
 
 `Scenes/Main.tscn` is the main scene: it composes the level, the camera rig, the
-gameplay nodes and the HUD. `Scenes/level.tscn` is scenery and targets only.
+gameplay nodes and the HUD. `Scenes/level.tscn` is scenery, the camera rail and the
+parking bays; the cars are spawned into those bays when a run starts. See
+[docs/parking-bays.md](docs/parking-bays.md) for how a car ends up innocent or guilty.
 
 ## Running locally
 
@@ -68,8 +74,8 @@ Then visit <http://localhost:8000/WebProject.html>.
 
 ## Status
 
-Early prototype. The scenes, models, and web export pipeline are in place; gameplay scripting
-(throwing, scoring, target validation) is still being built out.
+Early prototype. The scenes, models, and web export pipeline are in place, and the core loop —
+throwing, scoring, target validation and the randomised street — plays end to end.
 
 ## Credits
 

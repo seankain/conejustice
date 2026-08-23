@@ -138,6 +138,12 @@ def car_coned():
     return _seq([(523, 0.10), (659, 0.10), (784, 0.20)], "square")
 
 
+def penalty():
+    # A falling two-note buzz, deliberately sour against car_coned's rising run:
+    # the two land in the same moment of play and must never be confused.
+    return _seq([(330, 0.09), (247, 0.20)], "saw")
+
+
 def reload_rustle():
     # Long enough to cover the default 0.9s lockout; SfxPlayer repitches it if
     # reload_time is changed, so it always ends when throwing comes back.
@@ -178,6 +184,7 @@ SOUNDS = {
     "cone_ground": cone_ground,
     "cone_settled": cone_settled,
     "car_coned": car_coned,
+    "penalty": penalty,
     "reload_rustle": reload_rustle,
     "empty_click": empty_click,
     "low_time_beep": low_time_beep,

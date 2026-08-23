@@ -24,10 +24,12 @@ the space available for authoring rail stops.
 Main (Node3D)                       Scenes/Main.tscn — new game root
 ├── Level                           existing level.tscn, instanced
 │   ├── CameraTrack (Node3D)        ordered rail
-│   │   ├── Stop0 (CameraStop)      Marker3D + section config
+│   │   ├── Stop0 (CameraStop)      Marker3D + section config, points at bays
 │   │   ├── Stop1 (CameraStop)
 │   │   └── …
-│   └── Targets                     TargetCar instances, referenced by stops
+│   └── ParkingLot (Node3D)         spawns the cars, decides who is guilty
+│       ├── Bay0 (ParkingSpace)     Marker3D + a painted bay and its tolerances
+│       └── …
 ├── CameraRig (Node3D)              owns the Camera3D, tweens along the track
 ├── ConeThrower (Node)              spawn + impulse, magazine, reload
 ├── SectionManager (Node)           per-stop lifecycle: arm → play → clear/timeout
@@ -52,6 +54,13 @@ the *approach* to that stop. `CameraRig` tweens with a single `0 → 1` progress
 `Transform3D.interpolate_with()`, which slerps the basis properly instead of lerping Euler
 angles. Input is locked and the timer is paused while travelling.
 
+**Picking a target.** Not every car is fair game. The level holds a row of `ParkingSpace`
+bays; `ParkingLot` fills them at the start of each run and decides, per bay, whether the car
+in it is parked legally. A violator is offset out of its bay or slewed across it far enough
+to be unmistakable from the camera; everything else is parked properly, and coning it costs
+points. Which cars are which is rolled fresh every run. See
+[parking-bays.md](parking-bays.md).
+
 **Coning a car.** A `TargetCar` owns a `ConeCatcher` `Area3D` hugging the body plus a smaller
 `RoofZone` `Area3D`. A cone counts once it has been overlapping the catcher with
 `linear_velocity.length() < settle_speed` continuously for `settle_time` (~0.5s) — so cones
@@ -64,8 +73,10 @@ section clears and the rig departs for the next stop.
 timing cost, exactly as in Time Crisis. The HUD magazine is a row of cone icons that empty
 left-to-right and refill on reload.
 
-**Scoring.** Cone landed on a car `+100`, roof landing `+250`, section cleared `+1000`, plus
-`remaining_seconds × 10` as a time bonus. A timeout ends the run.
+**Scoring.** Cone landed on an illegally parked car `+100`, roof landing `+250`, car fully
+coned `+500`, section cleared `+1000`, plus `remaining_seconds × 10` as a time bonus. A cone
+on a correctly parked car is `-200` and breaks the combo, and burying one costs `-600` more.
+A timeout ends the run.
 
 ## Phases
 

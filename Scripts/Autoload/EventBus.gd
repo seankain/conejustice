@@ -18,9 +18,12 @@ signal run_started()
 ## running out of clock.
 signal run_over(won: bool)
 
-## The cars for this section, armed and reset, just before it goes live. Held
-## as a plain Array so this autoload does not depend on the TargetCar class.
-signal section_armed(cars: Array)
+## The cars for this section, armed and reset, just before it goes live -- every
+## car parked at the stop, not only the illegally parked ones, because telling
+## those apart is the player's job. [param violators] is how many of them are
+## actually in the wrong, which is the one hint the HUD is allowed to give.
+## Held as a plain Array so this autoload does not depend on the TargetCar class.
+signal section_armed(cars: Array, violators: int)
 ## Camera has arrived and the section is live. [param time_limit] is in seconds.
 signal section_started(index: int, time_limit: float)
 ## Every target car at this stop is coned.
@@ -39,17 +42,25 @@ signal travel_finished(index: int)
 
 # --- Targets (TargetCar) ---
 
-## A cone has settled on a car and been counted.
-signal cone_landed(car: Node3D, on_roof: bool)
-## A counted cone was knocked off again. ScoreManager reverses its award.
-signal cone_unlanded(car: Node3D, on_roof: bool)
+## A cone has settled on a car and been counted. [param on_violator] is false
+## when the car was parked correctly, which is a mistake rather than a hit, and
+## it travels on the signal so listeners never have to reach into the car to ask.
+signal cone_landed(car: Node3D, on_roof: bool, on_violator: bool)
+## A counted cone was knocked off again. ScoreManager reverses its award, which
+## for an innocent car means handing the penalty back.
+signal cone_unlanded(car: Node3D, on_roof: bool, on_violator: bool)
 ## A thrown cone came to rest without landing on a car. Breaks the combo.
 signal cone_missed()
 ## A cone struck something hard enough to be worth hearing. Rate limited at the
 ## cone before it ever reaches the bus.
 signal cone_impact(position: Vector3, speed: float, on_car: bool)
-## A car has reached its required cone count. Fires once per car per run.
+## An illegally parked car has reached its required cone count. Fires once per
+## car per run, and means justice: only violators get here.
 signal car_coned(car: Node3D)
+## A correctly parked car has reached that same count. Separated from
+## [signal car_coned] rather than flagged on it so that nothing scoring, counting
+## or celebrating a coned car can forget to check which kind it was.
+signal innocent_coned(car: Node3D)
 
 # --- Throwing and the magazine (ConeThrower) ---
 
