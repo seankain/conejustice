@@ -32,7 +32,7 @@ car costs you points. Look at the painted bay before you throw.
 ```
 Scenes/       Game scenes — Main (game root), level, Cone, SUV, Tree1, UI/
 Scripts/      GDScript — Autoload/, Audio/, Camera/, Gameplay/, UI/
-Assets/       First-party assets (generated placeholder audio)
+Assets/       First-party assets (vehicle profiles, generated placeholder audio)
 ThirdParty/   Third-party models and textures (cars, building, trees, skybox)
 Tools/        Asset generation scripts
 docs/         Design and implementation notes
@@ -43,7 +43,9 @@ export_presets.cfg  Web export preset
 `Scenes/Main.tscn` is the main scene: it composes the level, the camera rig, the
 gameplay nodes and the HUD. `Scenes/level.tscn` is scenery, the camera rail and the
 parking bays; the cars are spawned into those bays when a run starts. See
-[docs/parking-bays.md](docs/parking-bays.md) for how a car ends up innocent or guilty.
+[docs/parking-bays.md](docs/parking-bays.md) for how a car ends up innocent or guilty, and
+[docs/vehicle-variety.md](docs/vehicle-variety.md) for adding a vehicle to the pool the
+bays are filled from.
 
 ## Running locally
 

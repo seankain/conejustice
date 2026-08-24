@@ -30,6 +30,17 @@ extends StaticBody3D
 ## Speed below which a cone counts as at rest, in m/s.
 @export var settle_speed: float = 0.35
 
+@export_group("Marker")
+## Height above this car's origin that its HUD bracket hangs at, roughly
+## mid-body. Per vehicle rather than per HUD: a van and a hatchback do not keep
+## their middles in the same place, and the bracket is how the player finds the
+## car on screen at all.
+@export var marker_height: float = 1.1
+## World height the bracket is sized against, so it shrinks with distance
+## without anyone having to invent a pixels-per-metre constant. Roughly how tall
+## this vehicle reads from the rail.
+@export var marker_size: float = 1.3
+
 ## Emitted per cone as it settles. on_roof marks the bonus landing.
 signal cone_settled(car: TargetCar, on_roof: bool)
 ## Emitted once, when the car reaches cones_required.

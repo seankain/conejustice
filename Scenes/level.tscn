@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://cgtflu52eujq6" path="res://ThirdParty/Skybox/portland_landing_pad_4k.exr" id="1_k5f4k"]
 [ext_resource type="PackedScene" uid="uid://dr5gis4wwbtx5" path="res://ThirdParty/Models/ResidentialBuilding/source/JK_Elite_test.fbx" id="2_6phgx"]
-[ext_resource type="PackedScene" uid="uid://bla4sban8el15" path="res://Scenes/SUV.tscn" id="4_81xng"]
+[ext_resource type="Resource" path="res://Assets/Vehicles/SUV.tres" id="4_suv"]
 [ext_resource type="PackedScene" uid="uid://dwou02buhmiko" path="res://Scenes/Tree1.tscn" id="5_wqkje"]
 [ext_resource type="Script" uid="uid://dvbtcwe7txjaq" path="res://Scripts/Camera/CameraTrack.gd" id="6_track"]
 [ext_resource type="Script" uid="uid://brvd6tggu4aq1" path="res://Scripts/Camera/CameraStop.gd" id="7_stop"]
@@ -60,7 +60,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.579258, 0, -22.677265)
 
 [node name="ParkingLot" type="Node3D" parent="." unique_id=413662367]
 script = ExtResource("8_lot")
-car_scenes = Array[PackedScene]([ExtResource("4_81xng")])
+vehicles = Array[VehicleProfile]([ExtResource("4_suv")])
 
 [node name="Bay0" type="Marker3D" parent="ParkingLot" unique_id=83087912]
 transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -24, 0.0486287, 9)

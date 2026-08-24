@@ -153,9 +153,29 @@ func bay_transform() -> Transform3D:
 ## width and length, which is what turns room into an angle. Only a badly parked
 ## car uses either, and only [ParkingLot] can work them out, because only the lot
 ## knows what else is going to be parked in the row.
-func pose(rng: RandomNumberGenerator, legal: bool, room := Vector2(INF, INF),
-		car_footprint := Vector2(1.8, 4.5)) -> Transform3D:
+##
+## Neither has a default. They used to, back when every car on the street was the
+## same SUV and a stand-in was harmless; with a pool of models a wrong footprint
+## silently hands a car an angle it does not have the room for, so the caller has
+## to say what it is placing.
+func pose(rng: RandomNumberGenerator, legal: bool, room: Vector2,
+		car_footprint: Vector2) -> Transform3D:
 	return _legal_pose(rng) if legal else _violation_pose(rng, room, car_footprint)
+
+
+## Whether a vehicle this size can be parked here at all.
+##
+## The test is containment by the paint: a body wider or longer than its own bay
+## hangs out of it however carefully it is placed, which would make it a violator
+## by mesh rather than by pose -- and the player, looking at a car that is
+## squarely in the middle of its lines and still over them, would have no way to
+## read it. Such a vehicle is simply not a candidate for this bay.
+##
+## It says nothing about the neighbours on purpose. How much room a car has
+## beside it depends on what else the run decided to park there, which only
+## [ParkingLot] is in a position to know.
+func fits(footprint: Vector2) -> bool:
+	return footprint.x <= bay_width and footprint.y <= bay_length
 
 
 ## A car's centre in bay-local metres: x across the bay, z along it.
