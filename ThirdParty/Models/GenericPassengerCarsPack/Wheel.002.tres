@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dnp416t7aqh6y"]
+
+[ext_resource type="Texture2D" uid="uid://btnayxex8gry0" path="res://ThirdParty/Models/GenericPassengerCarsPack/wheel_D_Diffuse.png" id="1_n3lvn"]
+
+[resource]
+resource_name = "Wheel.002"
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_n3lvn")
+emission_enabled = true
+emission_energy_multiplier = 0.0

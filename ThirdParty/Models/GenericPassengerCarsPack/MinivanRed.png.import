@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cgb1j30mmlu38"
-path.s3tc="res://.godot/imported/lights.jpg-7c8bd8d34bd5e73b6c152cf1e6c02d29.s3tc.ctex"
+uid="uid://c687fbxkrw6kr"
+path.s3tc="res://.godot/imported/MinivanRed.png-11a61b6e20b307c6c995c9baf4409e7d.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://ThirdParty/Models/GenericPassengerCarsPack/lights.jpg"
-dest_files=["res://.godot/imported/lights.jpg-7c8bd8d34bd5e73b6c152cf1e6c02d29.s3tc.ctex"]
+source_file="res://ThirdParty/Models/GenericPassengerCarsPack/MinivanRed.png"
+dest_files=["res://.godot/imported/MinivanRed.png-11a61b6e20b307c6c995c9baf4409e7d.s3tc.ctex"]
 
 [params]
 

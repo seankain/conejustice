@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cgb1j30mmlu38"
-path.s3tc="res://.godot/imported/lights.jpg-7c8bd8d34bd5e73b6c152cf1e6c02d29.s3tc.ctex"
+uid="uid://btnayxex8gry0"
+path.s3tc="res://.godot/imported/wheel_D_Diffuse.png-8faa5e2a3aad3302832c0157406c9bae.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://ThirdParty/Models/GenericPassengerCarsPack/lights.jpg"
-dest_files=["res://.godot/imported/lights.jpg-7c8bd8d34bd5e73b6c152cf1e6c02d29.s3tc.ctex"]
+source_file="res://ThirdParty/Models/GenericPassengerCarsPack/wheel_D_Diffuse.png"
+dest_files=["res://.godot/imported/wheel_D_Diffuse.png-8faa5e2a3aad3302832c0157406c9bae.s3tc.ctex"]
 
 [params]
 

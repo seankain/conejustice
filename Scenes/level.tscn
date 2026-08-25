@@ -3,8 +3,10 @@
 [ext_resource type="Texture2D" uid="uid://cgtflu52eujq6" path="res://ThirdParty/Skybox/portland_landing_pad_4k.exr" id="1_k5f4k"]
 [ext_resource type="PackedScene" uid="uid://dr5gis4wwbtx5" path="res://ThirdParty/Models/ResidentialBuilding/source/JK_Elite_test.fbx" id="2_6phgx"]
 [ext_resource type="Resource" path="res://Assets/Vehicles/SUV.tres" id="4_suv"]
+[ext_resource type="Script" uid="uid://bvv45qviv5tay" path="res://Scripts/Gameplay/VehicleProfile.gd" id="5_oqgf2"]
 [ext_resource type="PackedScene" uid="uid://dwou02buhmiko" path="res://Scenes/Tree1.tscn" id="5_wqkje"]
 [ext_resource type="Script" uid="uid://dvbtcwe7txjaq" path="res://Scripts/Camera/CameraTrack.gd" id="6_track"]
+[ext_resource type="Resource" uid="uid://c0ebhyocmf8hb" path="res://Assets/Vehicles/Minivan.tres" id="7_qxfql"]
 [ext_resource type="Script" uid="uid://brvd6tggu4aq1" path="res://Scripts/Camera/CameraStop.gd" id="7_stop"]
 [ext_resource type="Script" uid="uid://cnx5e6sg4emqx" path="res://Scripts/Gameplay/ParkingLot.gd" id="8_lot"]
 [ext_resource type="Script" uid="uid://qrm0ujkyu57w" path="res://Scripts/Gameplay/ParkingSpace.gd" id="9_bay"]
@@ -60,7 +62,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.579258, 0, -22.677265)
 
 [node name="ParkingLot" type="Node3D" parent="." unique_id=413662367]
 script = ExtResource("8_lot")
-vehicles = Array[VehicleProfile]([ExtResource("4_suv")])
+vehicles = Array[ExtResource("5_oqgf2")]([ExtResource("4_suv"), ExtResource("7_qxfql")])
 
 [node name="Bay0" type="Marker3D" parent="ParkingLot" unique_id=83087912]
 transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -24, 0.0486287, 9)
