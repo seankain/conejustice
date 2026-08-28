@@ -38,13 +38,19 @@ turned end for end reads as square.
 
 ### Why the room matters
 
-A 4.5 m car in a 2.4 m bay runs out of angle fast. At the row's 3.3 m pitch a car has
-about 0.75 m of room each side before it is inside the car next to it, which caps
-crookedness at roughly 21 degrees and sideways drift at about 0.87 m. `ParkingLot`
-measures that room per bay — treating a bay it has not rolled yet as occupied, and halving
-the room to an occupied neighbour because that neighbour may be drifting this way too —
-and hands it to the bay, which turns it into an angle. A bay with a car hard against both
-sides can only offend by sticking out.
+A 4.5 m car in a 2.4 m bay runs out of angle fast, and the row in `level.tscn` is tight:
+the bays sit at a 2.26–2.66 m pitch, so a 1.8 m car has only about 0.23 m of gap each side
+before it is inside the car next to it — and half of that once the neighbour's own drift is
+allowed for. `ParkingLot` measures that room per bay, taking **both** cars' widths out of
+the gap, treating a bay it has not rolled yet as occupied, and halving what is left because
+that neighbour may be drifting this way too. It hands the result to the bay, which turns it
+into an angle. A bay with a car hard against both sides can only offend by sticking out.
+
+Those widths come from each vehicle's `VehicleProfile`, not from one number for the whole
+street — see [vehicle-variety.md](vehicle-variety.md). That is the reason the lot draws
+every vehicle in a section *before* it places any of them: the room beside a bay depends on
+how wide its neighbour is, and a neighbour that has not been drawn yet has no width to ask
+about.
 
 The upshot: violations stay unmistakable and no two cars ever share the same patch of road.
 
@@ -60,6 +66,8 @@ look at) and again at the start of every run. Per stop:
    correctly parked is merely a duller section.
 3. `min_innocents` bays are held back.
 4. Whatever is left is occupied on a roll against each bay's `occupancy_chance`.
+5. Every occupied bay draws a vehicle from `ParkingLot.vehicles`, weighted, filtered to
+   what fits that bay, and preferring not to repeat the car parked beside it.
 
 Set `ParkingLot.random_seed` to anything non-zero to replay one exact street while tuning.
 

@@ -13,11 +13,10 @@ extends Control
 ## Only the armed cars are tracked. Iterating every car in the level each frame
 ## would work today and stop working the moment the level grows.
 
-## Height above a car's origin to hang its bracket, roughly mid-body.
-@export var marker_height: float = 1.1
-## World height used to size the bracket, so it shrinks with distance without
-## anyone having to invent a pixels-per-metre constant.
-@export var marker_world_size: float = 1.3
+## Where a bracket hangs and how big it reads come off the car itself
+## ([member TargetCar.marker_height] and [member TargetCar.marker_size]), not
+## from here. They are properties of the vehicle's shape, and one number for the
+## whole HUD hung a truck's bracket through its windscreen.
 @export var bracket_min_half: float = 16.0
 @export var bracket_max_half: float = 160.0
 
@@ -110,14 +109,14 @@ func _draw() -> void:
 
 
 func _draw_bracket(camera: Camera3D, car: TargetCar) -> void:
-	var anchor := car.global_position + Vector3.UP * marker_height
+	var anchor := car.global_position + Vector3.UP * car.marker_height
 	# A bracket for a car behind the camera would smear across the screen as
 	# the rig turns, so those are simply not drawn.
 	if camera.is_position_behind(anchor):
 		return
 
 	var centre := camera.unproject_position(anchor)
-	var top := camera.unproject_position(anchor + Vector3.UP * marker_world_size)
+	var top := camera.unproject_position(anchor + Vector3.UP * car.marker_size)
 	var half := clampf(absf(centre.y - top.y), bracket_min_half, bracket_max_half)
 	var half_w := half * 1.35
 
@@ -223,7 +222,7 @@ func _stamp(car: Node3D, text: String, colour: Color) -> void:
 	if target == null:
 		return
 	_done_age[target.get_instance_id()] = 0.0
-	_push(target.global_position + Vector3.UP * marker_height, text, colour, 30)
+	_push(target.global_position + Vector3.UP * target.marker_height, text, colour, 30)
 
 
 func _on_score_popup(amount: int, world_position: Vector3) -> void:

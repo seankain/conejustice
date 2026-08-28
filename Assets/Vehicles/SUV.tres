@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="VehicleProfile" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Gameplay/VehicleProfile.gd" id="1_profile"]
+[ext_resource type="PackedScene" uid="uid://bla4sban8el15" path="res://Scenes/SUV.tscn" id="2_suv"]
+
+[resource]
+script = ExtResource("1_profile")
+scene = ExtResource("2_suv")
+footprint = Vector2(1.8, 4.5)
+bay_height_offset = 0.0
+spawn_weight = 1.0

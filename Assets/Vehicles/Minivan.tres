@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="VehicleProfile" format=3 uid="uid://c0ebhyocmf8hb"]
+
+[ext_resource type="PackedScene" uid="uid://j6xuch0doqka" path="res://Scenes/Minivan.tscn" id="1_00kbw"]
+[ext_resource type="Script" uid="uid://bvv45qviv5tay" path="res://Scripts/Gameplay/VehicleProfile.gd" id="1_lyj2q"]
+
+[resource]
+script = ExtResource("1_lyj2q")
+scene = ExtResource("1_00kbw")
+metadata/_custom_type_script = "uid://bvv45qviv5tay"
