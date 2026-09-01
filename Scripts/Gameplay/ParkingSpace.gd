@@ -148,19 +148,34 @@ func bay_transform() -> Transform3D:
 ## bay's own tolerance the pose lands on.
 ##
 ## [param room] is how far a car may reach each way across the bay before it
-## would be standing inside a neighbour -- x towards local -X, y towards +X, and
-## INF on a side with nothing beside it. [param car_footprint] is that car's
-## width and length, which is what turns room into an angle. Only a badly parked
-## car uses either, and only [ParkingLot] can work them out, because only the lot
-## knows what else is going to be parked in the row.
+## would be standing inside a neighbour -- x towards local -X, y towards +X, INF
+## on a side with nothing beside it, and negative on a side where something has
+## already taken the space. [param car_footprint] is that car's width and length,
+## which is what turns room into an angle. Only [ParkingLot] can work either of
+## them out, because only the lot knows what else is parked in the row.
 ##
-## Neither has a default. They used to, back when every car on the street was the
-## same SUV and a stand-in was harmless; with a pool of models a wrong footprint
-## silently hands a car an angle it does not have the room for, so the caller has
-## to say what it is placing.
+## Both poses use them, and for opposite reasons: a badly parked car takes as
+## much of the room as its fault needs, and a correctly parked one is pushed
+## across its bay by whatever room is left. Neither has a default. They used to,
+## back when every car on the street was the same SUV and a stand-in was
+## harmless; with a pool of models a wrong footprint silently hands a car an angle
+## it does not have the room for, so the caller has to say what it is placing.
 func pose(rng: RandomNumberGenerator, legal: bool, room: Vector2,
 		car_footprint: Vector2) -> Transform3D:
-	return _legal_pose(rng) if legal else _violation_pose(rng, room, car_footprint)
+	if legal:
+		return _legal_pose(rng, room, car_footprint)
+	return _violation_pose(rng, room, car_footprint)
+
+
+## How far off centre a legally parked car here can be pushed and still read as
+## parked properly.
+##
+## [ParkingLot] uses it as what this bay is willing to give up to a car parked
+## badly beside it: an innocent shifts over rather than being parked through, and
+## the lot has to know how far that goes while it is still deciding how much room
+## the violator gets.
+func legal_give() -> float:
+	return legal_lateral * LEGAL_JITTER
 
 
 ## Whether a vehicle this size can be parked here at all.
@@ -221,12 +236,41 @@ func get_occupant() -> Node3D:
 	return occupant
 
 
-func _legal_pose(rng: RandomNumberGenerator) -> Transform3D:
+## A pose inside the bay's own tolerance, fitted into whatever room is left over
+## once the badly parked cars have taken theirs.
+##
+## The yaw is rolled first because it decides how much of the bay this car needs:
+## a car sitting even slightly crooked reaches further across than its own width,
+## and in a tight row that overhang is the difference between fitting beside a bad
+## park and not.
+func _legal_pose(rng: RandomNumberGenerator, room: Vector2,
+		car_footprint: Vector2) -> Transform3D:
+	var yaw := rng.randf_range(-legal_yaw_degrees, legal_yaw_degrees) * LEGAL_JITTER
+	var overhang := _across(car_footprint, yaw) - car_footprint.x * 0.5
 	return _pose(
-			rng.randf_range(-legal_lateral, legal_lateral) * LEGAL_JITTER,
+			_legal_lateral(rng, Vector2(room.x - overhang, room.y - overhang)),
 			rng.randf_range(-legal_longitudinal, legal_longitudinal) * LEGAL_JITTER,
-			rng.randf_range(-legal_yaw_degrees, legal_yaw_degrees) * LEGAL_JITTER,
+			yaw,
 			rng.randf() < REVERSED_CHANCE)
+
+
+## Where across the bay a legally parked car sits, given the room it has.
+##
+## The legal band is never left: a car sitting on its own tolerance line reads as
+## a violation, and the player's read is the game. Inside it the car goes wherever
+## the room allows, which is what lets an innocent park beside a violator at all
+## -- shifted up against the far line because someone took half its space is
+## exactly what a real street looks like. When the room asks for more than the
+## band has to give, this returns the most it can and [ParkingLot] finds that car
+## another bay.
+func _legal_lateral(rng: RandomNumberGenerator, room: Vector2) -> float:
+	var give := legal_give()
+	var low := maxf(-give, -room.x)
+	var high := minf(give, room.y)
+	if low > high:
+		# Crowded from both sides: as far from the tighter one as the band allows.
+		return -give if room.x > room.y else give
+	return rng.randf_range(low, high)
 
 
 func _violation_pose(rng: RandomNumberGenerator, room: Vector2,
@@ -275,6 +319,9 @@ func _sticking_out(rng: RandomNumberGenerator) -> float:
 ## The most a car may be turned in this bay before a corner swings further across
 ## than [param room] allows. A long car in a narrow bay runs out of angle fast,
 ## which is exactly why a crooked one blocks the space next to it.
+##
+## The inverse of [method _across], which is the same geometry read the other way
+## round: what a given angle costs, rather than what a given gap allows.
 func _yaw_ceiling(room: float, car_footprint: Vector2) -> float:
 	if not is_finite(room):
 		return MAX_VIOLATION_YAW
@@ -284,9 +331,23 @@ func _yaw_ceiling(room: float, car_footprint: Vector2) -> float:
 	var allowed := half_width + room
 	if allowed >= corner:
 		return MAX_VIOLATION_YAW
+	# Room enough gone that even parked square this car is in its neighbour. There
+	# is no angle that helps; the caller wants no angle at all.
+	if allowed <= 0.0:
+		return 0.0
 	# The car's half-width across the bay is corner * sin(yaw + atan2(w, l)), so
 	# the largest yaw that still fits falls straight out of it.
 	return rad_to_deg(asin(allowed / corner) - atan2(half_width, half_length))
+
+
+## Half the width a car of [param car_footprint] takes across the bay when it
+## sits [param yaw_degrees] out of square: its own half-width parked straight, and
+## more than that the moment it is not, because the corner leads.
+static func _across(car_footprint: Vector2, yaw_degrees: float) -> float:
+	var half_width := car_footprint.x * 0.5
+	var half_length := car_footprint.y * 0.5
+	var corner := sqrt(half_width * half_width + half_length * half_length)
+	return corner * sin(absf(deg_to_rad(yaw_degrees)) + atan2(half_width, half_length))
 
 
 ## A crookedness past the legal band, up to whatever [param ceiling] allows.

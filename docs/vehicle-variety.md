@@ -79,9 +79,11 @@ so the painted bays already overlap slightly at the tight end.
 - **Hard ceiling:** 2.4 m wide, 5.2 m long. Past either, `fits()` rejects the vehicle and
   the bay stays empty.
 - **Practical ceiling:** about 2.0 m wide. Above that there is almost no room left beside
-  the bay once a neighbour's own drift is allowed for, so the vehicle can still be parked
-  but can only ever offend by sticking out — the one fault that costs no lateral room.
-  Everything still works; the street just gets duller.
+  the bay once the gap is shared with a neighbour, so the vehicle can still be parked but
+  can only ever offend by sticking out — the one fault that costs no lateral room — and the
+  correctly parked cars beside a wide violator start being crowded out of their bays
+  altogether. Everything still works; the street just gets duller and gappier. See
+  [parking-bays.md](parking-bays.md) for what happens to a car with nowhere to park.
 
 If the models you are importing are vans or pickups, budget a pass on bay spacing rather
 than fighting the room maths.

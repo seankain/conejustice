@@ -17,10 +17,24 @@ extends Node3D
 ## vehicles]. Size is the part that has to be settled early: a bay works out its
 ## room from the width of whatever is parked beside it, so every bay in a section
 ## knows what it is getting before any of them are filled.
+##
+## The badly parked cars go down first, and the rest of the row is fitted around
+## them. A violator is what an area is about, so it is never the car that gives
+## way; a correctly parked one is checked against what is already on the road
+## before it is placed at all, and if it does not clear, its bay is left empty and
+## that car takes the next bay in the area that will have it. An empty space
+## beside a bad park reads as exactly what it is.
 
 ## Lets SectionManager find the lot without an exported reference across the
 ## level scene boundary, the same way the camera track is found.
 const GROUP := &"parking_lot"
+
+## Metres of road kept clear between two parked cars, for the collision checks
+## below and for the room maths that feeds them. Wing mirrors are already inside
+## an authored footprint, so this is breathing space rather than clearance for
+## anything in particular -- enough that two cars read as parked beside each other
+## rather than as having collided.
+const PARKING_CLEARANCE := 0.08
 
 ## How far an authored footprint may sit from the mesh it describes before
 ## [member verify_footprints] complains, in metres. Loose enough not to fire on
@@ -69,9 +83,10 @@ var _assigned: Dictionary = {}
 var _verified: Dictionary = {}
 ## The vehicle parked in the last bay filled, for [member avoid_adjacent_repeats].
 var _previous_profile: VehicleProfile = null
-## Widest footprint in the pool, refreshed per section. Stood in for any bay that
-## has not been rolled yet, where nothing is known about what will be parked.
-var _widest_width: float = 0.0
+## Widest and longest footprint in the pool, refreshed per section. Stood in for
+## any bay that has not been rolled yet, where nothing is known about what will be
+## parked.
+var _widest_footprint := Vector2.ZERO
 
 
 func _enter_tree() -> void:
@@ -120,14 +135,19 @@ func clear_cars() -> void:
 ## between the two bounds; [param min_innocents] is the guard that keeps at least
 ## one correctly parked car in the area, because an area with nothing to spare is
 ## an area with no decision in it.
+##
+## The whole area is rolled before anything is placed, then the badly parked cars
+## go down, then the rest are fitted around them one at a time. A correctly parked
+## car with nowhere to be goes to the next bay in the area that will have it, and
+## the bay it came from is left empty.
 func populate(spaces: Array[ParkingSpace], min_violators: int, max_violators: int,
 		min_innocents: int) -> Array[TargetCar]:
 	var parked: Array[TargetCar] = []
 	if spaces.is_empty():
 		return parked
 
-	_widest_width = _pool_widest_width()
-	if _widest_width <= 0.0:
+	_widest_footprint = _pool_widest_footprint()
+	if _widest_footprint.x <= 0.0:
 		push_error("ParkingLot: no usable vehicles assigned -- a profile needs a scene "
 				+ "and a non-zero footprint -- so every bay stays empty.")
 		return parked
@@ -171,11 +191,15 @@ func populate(spaces: Array[ParkingSpace], min_violators: int, max_violators: in
 	# to be filled, and that answer does not exist until the whole roll is done.
 	for space in spaces:
 		_decided[space] = true
-	var occupied: Dictionary = {}
+	# What each bay is getting, which is what the room beside its neighbours is
+	# predicted from until there is a real car there to measure instead. A bay
+	# drops out of the plan the moment the run gives up on it, so nothing later
+	# leaves room for a car that was never parked.
+	var plan: Dictionary = {}
 	for space in violators:
-		occupied[space] = true
+		plan[space] = ParkingSpace.Role.VIOLATOR
 	for space in innocents:
-		occupied[space] = true
+		plan[space] = ParkingSpace.Role.INNOCENT
 
 	# Which vehicle goes where is settled in the same pass, and for the same
 	# reason: the room beside a bay depends on how wide its neighbour is, and a
@@ -183,41 +207,84 @@ func populate(spaces: Array[ParkingSpace], min_violators: int, max_violators: in
 	# the section's own bay order so the no-repeat rule sees the row as the
 	# player does, and so a seeded run draws them back in the same order.
 	for space in spaces:
-		if not occupied.has(space):
+		if not plan.has(space):
 			continue
 		var profile := _pick_profile(space)
 		if profile == null:
 			push_warning(("ParkingLot: nothing in vehicles fits %s (%.1f x %.1f m), "
 					% [space.name, space.bay_width, space.bay_length])
 					+ "so it stays empty.")
-			occupied.erase(space)
+			plan.erase(space)
 			continue
 		_assigned[space] = profile
 		_previous_profile = profile
 
-	for space in violators:
-		var car := _park(space, false, _lateral_room(space, occupied))
-		if car != null:
-			parked.append(car)
-	for space in innocents:
-		var car := _park(space, true)
-		if car != null:
-			parked.append(car)
+	# The badly parked cars first, in the row's own order. They are what the area
+	# is about and they take the room their fault needs; everything after this is
+	# fitted around where they actually ended up.
+	for space in spaces:
+		if plan.get(space, -1) != ParkingSpace.Role.VIOLATOR:
+			continue
+		var car := _park(space, false, plan)
+		if car == null:
+			plan.erase(space)
+			continue
+		parked.append(car)
+
+	# Then the correctly parked ones, each checked against what is already on the
+	# road. A bay whose car cannot clear the violator leaning into it is left
+	# empty rather than parked through.
+	var displaced: Array[ParkingSpace] = []
+	for space in spaces:
+		if plan.get(space, -1) != ParkingSpace.Role.INNOCENT:
+			continue
+		var car := _park(space, true, plan)
+		if car == null:
+			plan.erase(space)
+			displaced.append(space)
+			continue
+		parked.append(car)
+
+	var lost := 0
+	for space in displaced:
+		var car := _repark(space, spaces, plan)
+		if car == null:
+			lost += 1
+			continue
+		parked.append(car)
+	_report_displaced(spaces, parked, displaced.size(), lost, min_innocents)
 	return parked
 
 
 ## How far a car in [param space] may drift each way across its bay before it
 ## would be sitting inside a neighbour: x towards the bay's local -X, y towards
 ## +X. INF on a side with nothing beside it, which is what makes straddling into
-## an empty space worth doing.
+## an empty space worth doing, and negative on a side where something has already
+## taken the room -- a car parked there has to move over by that much to clear it.
 ##
-## Both cars' widths come out of the gap -- this one's and the neighbour's -- and
-## what is left is halved, because that neighbour may be drifting this way just
-## as far. Assuming it parked dead centre is how two violators side by side end
-## up sharing the same metre of road.
-func _lateral_room(space: ParkingSpace, occupied: Dictionary) -> Vector2:
+## Where the neighbour is already parked this is a measurement rather than a
+## prediction: its real pose, crookedness and all, is what the gap is worked out
+## from. That is the whole reason the violators go down first.
+##
+## A bay still waiting on its car has to be guessed at, and the gap between the
+## two is split down the middle: either of them may come this way, and assuming a
+## neighbour parked dead centre is how two violators side by side end up sharing
+## the same metre of road. A bay that has not been rolled at all belongs to a
+## later section and is guessed at the same way, with the widest vehicle in the
+## pool, because assuming it is empty is how a car ends up standing in one from
+## the next area.
+##
+## The exception is what makes an innocent parkable beside a bad park at all: a
+## violator measuring a bay an innocent has not reached yet takes the whole gap
+## plus however far that bay can push a legally parked car aside. The innocent
+## shifts over when it gets there -- or gives up the bay altogether, which is the
+## point of checking rather than predicting.
+func _lateral_room(space: ParkingSpace, plan: Dictionary) -> Vector2:
 	var room := Vector2(INF, INF)
-	var width := _width_at(space)
+	var width := _footprint_at(space).x
+	# Only a car that is being parked badly is owed the room a neighbour will
+	# give up. Two correctly parked cars are not yielding to each other.
+	var claims_give: bool = plan.get(space, -1) == ParkingSpace.Role.VIOLATOR
 	var bay := space.bay_transform()
 	for node in get_tree().get_nodes_in_group(ParkingSpace.GROUP):
 		var other := node as ParkingSpace
@@ -228,43 +295,139 @@ func _lateral_room(space: ParkingSpace, occupied: Dictionary) -> Vector2:
 		# second row facing the first must not count as a neighbour.
 		if absf(offset.dot(bay.basis.z)) > space.bay_length * 0.5:
 			continue
-		if not _will_hold_a_car(other, occupied):
-			continue
 		var along := offset.dot(bay.basis.x)
-		var between := absf(along) - (width + _width_at(other)) * 0.5
-		var free := maxf(between * 0.5, 0.0)
-		if along < 0.0:
+		var side := -1.0 if along < 0.0 else 1.0
+		var free := INF
+		var neighbour := other.get_occupant()
+		if neighbour != null:
+			# Measured, not predicted: how far towards us that car actually came,
+			# taken from where it is rather than from the middle of its bay.
+			var reach := side * (neighbour.global_position - bay.origin).dot(bay.basis.x)
+			free = reach - _extent_across(bay.basis.x, neighbour.global_transform,
+					_footprint_at(other)) - width * 0.5 - PARKING_CLEARANCE
+		elif plan.has(other):
+			var between := absf(along) - (width + _footprint_at(other).x) * 0.5 \
+					- PARKING_CLEARANCE
+			if claims_give and plan[other] == ParkingSpace.Role.INNOCENT:
+				free = between + other.legal_give()
+			else:
+				free = between * 0.5
+		elif not _decided.has(other):
+			free = (absf(along) - (width + _widest_footprint.x) * 0.5
+					- PARKING_CLEARANCE) * 0.5
+		if side < 0.0:
 			room.x = minf(room.x, free)
 		else:
 			room.y = minf(room.y, free)
 	return room
 
 
-## How wide the car in [param space] is. A bay that has not been rolled yet is
-## given the widest vehicle in the pool: it is the assumption that cannot put two
-## cars through each other, and it is the same conservatism [method
-## _will_hold_a_car] already applies to whether that bay is occupied at all.
-func _width_at(space: ParkingSpace) -> float:
+## How big the car in [param space] is. A bay that has not been rolled yet is
+## given the widest and longest vehicle in the pool: it is the assumption that
+## cannot put two cars through each other.
+func _footprint_at(space: ParkingSpace) -> Vector2:
 	var profile: VehicleProfile = _assigned.get(space)
-	return profile.footprint.x if profile != null else _widest_width
+	return profile.footprint if profile != null else _widest_footprint
 
 
-func _will_hold_a_car(space: ParkingSpace, occupied: Dictionary) -> bool:
-	if occupied.has(space):
-		return true
-	if _decided.has(space):
-		return space.get_occupant() != null
-	# Not rolled yet. Treated as occupied, so a car never straddles into a bay
-	# that a later section is about to fill.
+## Half the width [param footprint] takes up along [param axis] when it is parked
+## at [param xform]. A crooked car reaches further across a row than its own
+## width, and this is that reach.
+static func _extent_across(axis: Vector3, xform: Transform3D, footprint: Vector2) -> float:
+	var car_basis := xform.basis.orthonormalized()
+	return absf(axis.dot(car_basis.x)) * footprint.x * 0.5 \
+			+ absf(axis.dot(car_basis.z)) * footprint.y * 0.5
+
+
+## Whether a car of [param footprint] parked at [param pose] would be standing in
+## one of the cars already on the street, with [param clearance] metres held clear
+## around it.
+##
+## Every bay in the level, not just this section's: the row runs on past where one
+## section's bays end, and a car half a metre over the line does not care which
+## camera stop is watching it.
+func _would_overlap(pose: Transform3D, footprint: Vector2, clearance: float) -> bool:
+	for node in get_tree().get_nodes_in_group(ParkingSpace.GROUP):
+		var other := node as ParkingSpace
+		if other == null:
+			continue
+		var car := other.get_occupant()
+		if car == null:
+			continue
+		if _overlaps(pose, footprint, car.global_transform, _footprint_at(other), clearance):
+			return true
+	return false
+
+
+## Whether two cars these sizes, parked at these poses, would share any road.
+##
+## A separating-axis test on the two footprints, flattened onto the road: bays are
+## level and cars differ only in yaw, so a rectangle each is the whole of the
+## geometry. [param clearance] is grown around the first of them, so a car being
+## fitted into a gap can be asked for room to park in rather than merely for a
+## pose that does not intersect.
+static func _overlaps(a: Transform3D, a_footprint: Vector2, b: Transform3D,
+		b_footprint: Vector2, clearance: float) -> bool:
+	var a_half := a_footprint * 0.5 + Vector2.ONE * clearance
+	var b_half := b_footprint * 0.5
+	var a_x := _flatten(a.basis.x)
+	var a_z := _flatten(a.basis.z)
+	var b_x := _flatten(b.basis.x)
+	var b_z := _flatten(b.basis.z)
+	var between := Vector2(b.origin.x - a.origin.x, b.origin.z - a.origin.z)
+	var axes: Array[Vector2] = [a_x, a_z, b_x, b_z]
+	for axis in axes:
+		var reach := absf(axis.dot(a_x)) * a_half.x + absf(axis.dot(a_z)) * a_half.y \
+				+ absf(axis.dot(b_x)) * b_half.x + absf(axis.dot(b_z)) * b_half.y
+		# One axis with daylight along it is all it takes: the two do not touch.
+		if absf(axis.dot(between)) > reach:
+			return false
 	return true
 
 
-func _park(space: ParkingSpace, legal: bool,
-		lateral_room := Vector2(INF, INF)) -> TargetCar:
+## A direction on the road, with the height thrown away.
+static func _flatten(direction: Vector3) -> Vector2:
+	return Vector2(direction.x, direction.z).normalized()
+
+
+## Parks a car in [param space] and returns it, or null when it cannot be parked
+## there at all. [param plan] is what the section has decided to put in each of
+## its bays, which is what the room beside this one is worked out from.
+##
+## A correctly parked car that would be standing in a car already on the street is
+## not placed: its bay is left empty and the caller takes it elsewhere. A violator
+## is placed either way -- it went first precisely so that everything else could
+## be fitted around it -- so an overlap there is the room maths having been wrong
+## and says so rather than quietly parking two cars in one space.
+func _park(space: ParkingSpace, legal: bool, plan: Dictionary) -> TargetCar:
 	var profile: VehicleProfile = _assigned.get(space)
 	if profile == null:
 		# Already reported when the draw came up empty; the bay simply stays so.
 		return null
+
+	var pose := space.pose(_rng, legal, _lateral_room(space, plan), profile.footprint)
+	# Bays are authored at the height a car's origin sits, so a model whose
+	# origin is elsewhere on the body is lifted or dropped to meet the road
+	# rather than every bay being re-levelled for it. Height is not part of what
+	# is_legally_parked measures, so this cannot change what the car scores as.
+	pose.origin += pose.basis.y * profile.bay_height_offset
+
+	# Checked before anything is instanced, so a bay that cannot take this car
+	# costs a rectangle test rather than a node that has to be freed again.
+	if legal:
+		# The check this whole ordering exists for. Clearance included: a car has
+		# to be parked *beside* what is already there, not shaved past it.
+		if _would_overlap(pose, profile.footprint, PARKING_CLEARANCE):
+			return null
+	elif _would_overlap(pose, profile.footprint, 0.0):
+		# No clearance in that one: a violator squeezing past a neighbour with
+		# centimetres to spare is the street working as intended, and only cars
+		# actually sharing road mean the room maths was wrong.
+		push_warning(("ParkingLot: the violator in %s was placed standing in a car that "
+				% space.name)
+				+ "was already parked. Check that bay's violation reaches against the "
+				+ "pitch of the row -- the room maths let it take space it did not have.")
+
 	var car := profile.scene.instantiate() as TargetCar
 	if car == null:
 		push_error("ParkingLot: %s does not instantiate a TargetCar." % profile.describe())
@@ -272,12 +435,6 @@ func _park(space: ParkingSpace, legal: bool,
 		return null
 
 	add_child(car)
-	var pose := space.pose(_rng, legal, lateral_room, profile.footprint)
-	# Bays are authored at the height a car's origin sits, so a model whose
-	# origin is elsewhere on the body is lifted or dropped to meet the road
-	# rather than every bay being re-levelled for it. Height is not part of what
-	# is_legally_parked measures, so this cannot change what the car scores as.
-	pose.origin += pose.basis.y * profile.bay_height_offset
 	car.global_transform = pose
 
 	# The pose is the truth, not the intent. Measuring what was actually placed
@@ -295,6 +452,64 @@ func _park(space: ParkingSpace, legal: bool,
 	space.occupy(car)
 	_cars.append(car)
 	return car
+
+
+## Takes the car that could not park in [param space] to the next bay in the area
+## that will have it, and returns it, or null when the area has nowhere to put it.
+##
+## "Next" is the section's own bay order rather than the nearest gap: the row is
+## filled the way it is read, and a driver who finds a space blocked carries on
+## down the street. Bays pinned EMPTY are left alone -- an author who marked a bay
+## never-occupied meant it -- and every candidate is checked exactly the way the
+## original bay was, so a gap that is only a gap because a violator is leaning
+## into it does not get offered as a fresh start.
+##
+## The car keeps the vehicle it drew. It is the same car moving down the row, and
+## redrawing here would quietly undo the no-repeat rule the row was dealt with.
+func _repark(space: ParkingSpace, spaces: Array[ParkingSpace],
+		plan: Dictionary) -> TargetCar:
+	var profile: VehicleProfile = _assigned.get(space)
+	# The bay it was pushed out of is empty for the rest of the run, and nothing
+	# measuring the row from here on should think a car is standing in it.
+	_assigned.erase(space)
+	if profile == null:
+		return null
+
+	for target in spaces:
+		if target == space or plan.has(target) or target.role == ParkingSpace.Role.EMPTY:
+			continue
+		if target.get_occupant() != null or not target.fits(profile.footprint):
+			continue
+		_assigned[target] = profile
+		var car := _park(target, true, plan)
+		if car != null:
+			return car
+		_assigned.erase(target)
+	return null
+
+
+## Says when an area came out of all that with less to look at than it was meant
+## to have. Cars being crowded out is the feature working; a whole area of them
+## with nowhere to go is a row too tight for the violations it is being asked to
+## hold, and that is a tuning problem with no other visible symptom.
+func _report_displaced(spaces: Array[ParkingSpace], parked: Array[TargetCar],
+		displaced: int, lost: int, min_innocents: int) -> void:
+	if displaced == 0:
+		return
+	var innocents := 0
+	for car in parked:
+		if not car.is_violator:
+			innocents += 1
+	if innocents >= min_innocents:
+		return
+	push_warning(("ParkingLot: the area at %s crowded %d correctly parked car(s) out of "
+			% [spaces[0].name, displaced])
+			+ "their bays, %d of which had nowhere else to go, leaving %d where "
+					% [lost, innocents]
+			+ "min_innocents is %d. Its %d bays are pitched too tightly for the "
+					% [min_innocents, spaces.size()]
+			+ "violations they are being asked to hold: widen the row, lower that "
+			+ "stop's max_violators, or bring in those bays' violation reaches.")
 
 
 ## Draws a vehicle for [param space]: what fits it, weighted, and preferably not
@@ -331,12 +546,15 @@ func _pick_profile(space: ParkingSpace) -> VehicleProfile:
 	return candidates[candidates.size() - 1]
 
 
-func _pool_widest_width() -> float:
-	var widest := 0.0
+## The box no vehicle in the pool is bigger than, taken axis by axis. Stood in for
+## a bay nothing is known about yet, where the only safe guess is the worst one.
+func _pool_widest_footprint() -> Vector2:
+	var widest := Vector2.ZERO
 	for profile in vehicles:
 		if profile == null or not profile.is_usable():
 			continue
-		widest = maxf(widest, profile.footprint.x)
+		widest.x = maxf(widest.x, profile.footprint.x)
+		widest.y = maxf(widest.y, profile.footprint.y)
 	return widest
 
 

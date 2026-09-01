@@ -39,18 +39,59 @@ turned end for end reads as square.
 ### Why the room matters
 
 A 4.5 m car in a 2.4 m bay runs out of angle fast, and the row in `level.tscn` is tight:
-the bays sit at a 2.26–2.66 m pitch, so a 1.8 m car has only about 0.23 m of gap each side
-before it is inside the car next to it — and half of that once the neighbour's own drift is
-allowed for. `ParkingLot` measures that room per bay, taking **both** cars' widths out of
-the gap, treating a bay it has not rolled yet as occupied, and halving what is left because
-that neighbour may be drifting this way too. It hands the result to the bay, which turns it
-into an angle. A bay with a car hard against both sides can only offend by sticking out.
+the bays sit at a 2.26–2.66 m pitch, so a 1.8 m car has only about 0.45 m of gap to a
+neighbour parked dead centre, and `PARKING_CLEARANCE` takes 0.08 m of that. `ParkingLot`
+works the room out per bay and hands it to the bay, which turns it into an angle. A bay with
+a car hard against both sides can only offend by sticking out.
+
+Where the neighbour is **already parked**, that room is measured off its real pose,
+crookedness and all, rather than predicted from the middle of its bay. That is the whole
+reason the badly parked cars are placed first. Where it is not parked yet, the gap between
+the two is split down the middle, because either of them may come the other's way — and a
+bay in a section the run has not reached yet is treated the same way, with the widest
+vehicle in the pool, because assuming it is empty is how a car ends up standing in one from
+the next area.
+
+The one exception is what lets a violator be worth looking at in a row this tight: a
+violator measuring a bay whose correctly parked car has not arrived yet takes the *whole*
+gap, plus the `legal_give()` that bay can shift a legally parked car aside by. It is
+spending room that belongs to a car which is not there to object, which is exactly why what
+happens next is a check rather than a promise.
 
 Those widths come from each vehicle's `VehicleProfile`, not from one number for the whole
 street — see [vehicle-variety.md](vehicle-variety.md). That is the reason the lot draws
 every vehicle in a section *before* it places any of them: the room beside a bay depends on
 how wide its neighbour is, and a neighbour that has not been drawn yet has no width to ask
 about.
+
+### Who gives way
+
+Violators go down first, in the row's own order. They are what an area is about, so they are
+never the car that moves. Every correctly parked car is then fitted around what is already
+on the road, and there are three answers:
+
+1. **It fits** — usually after shifting across its bay, because a legal pose uses the room
+   it has. A car pushed up against its far line because someone took half its space is what
+   a real street looks like. It never leaves the legal band: an innocent sitting on its own
+   tolerance line would read as a violation, and the player's read is the game.
+2. **It does not fit, but the area has room elsewhere.** Its bay is left empty and the car
+   takes the next bay in the section that will have it, checked exactly the same way. Bays
+   pinned `EMPTY` are not offered — an author who marked a bay never-occupied meant it.
+3. **It does not fit anywhere.** The car is dropped and the bay stays empty. A space nobody
+   can park in beside a bad park reads as exactly what it is.
+
+The check is `ParkingLot._overlaps`: a separating-axis test on the two footprints, flattened
+onto the road. Cars differ only in yaw, so a rectangle each is the whole of the geometry, and
+it runs before anything is instanced — a bay that cannot take a car costs a rectangle test
+rather than a node that has to be freed again. It is the authority. The room maths above
+decides where a car aims; this decides whether it parks there.
+
+Roughly one correctly parked car in eight is crowded out of its bay in the row as it stands
+today, and most of those find nowhere else in their own small section to go. That is the
+feature working. What is *not* fine is an area ending up under its `min_innocents`, and the
+lot says so in the Output panel when it does, naming the area: that is a row pitched too
+tightly for the violations it is being asked to hold. `Stop2` — up to two violators across
+three bays — is the one in this level that hits it.
 
 The upshot: violations stay unmistakable and no two cars ever share the same patch of road.
 
@@ -68,6 +109,14 @@ look at) and again at the start of every run. Per stop:
 4. Whatever is left is occupied on a roll against each bay's `occupancy_chance`.
 5. Every occupied bay draws a vehicle from `ParkingLot.vehicles`, weighted, filtered to
    what fits that bay, and preferring not to repeat the car parked beside it.
+6. The violators are placed, in bay order.
+7. The correctly parked cars are placed, in bay order, each checked against every car
+   already on the street.
+8. Any that could not be placed take the next bay in the area that will have them.
+
+Steps 1–5 settle the whole area before step 6 puts a single car down: a car straddling into
+the bay beside it has to know whether that bay is about to be filled and by what, and that
+answer does not exist until the roll is finished.
 
 Set `ParkingLot.random_seed` to anything non-zero to replay one exact street while tuning.
 
