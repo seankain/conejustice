@@ -95,6 +95,14 @@ than fighting the room maths.
    `ConeCatcher` and `RoofZone` around the new body. There is no substitute for doing this
    against the actual model: those two volumes decide what counts as a landing, which is the
    one thing in this game that should never be derived from a guess.
+
+   Duplicate it rather than building the node tree fresh, because the physics layers come
+   with it: the body sits on the cars layer (2), and both zones are `collision_layer = 0`,
+   `collision_mask = 4` — the cone layer and nothing else (see the table at the top of
+   [`ConeBody`](../Scripts/Gameplay/ConeBody.gd)). An `Area3D` added from scratch defaults to
+   layer 1, mask 1, never sees a cone, and leaves a car that looks perfect and cannot be
+   coned — which on a violator is a section the player can never clear. `TargetCar` warns
+   about it in the Output panel at load, but nothing about the car itself looks wrong.
 3. Set `marker_height` and `marker_size` on the scene's `TargetCar`, so its HUD bracket
    hangs at mid-body rather than through the windscreen.
 4. Run `Tools/derive_vehicle_profile.gd` from the editor (**File → Run** with the script

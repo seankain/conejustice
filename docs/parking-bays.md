@@ -39,10 +39,11 @@ turned end for end reads as square.
 ### Why the room matters
 
 A 4.5 m car in a 2.4 m bay runs out of angle fast, and the row in `level.tscn` is tight:
-the bays sit at a 2.26–2.66 m pitch, so a 1.8 m car has only about 0.45 m of gap to a
-neighbour parked dead centre, and `PARKING_CLEARANCE` takes 0.08 m of that. `ParkingLot`
-works the room out per bay and hands it to the bay, which turns it into an angle. A bay with
-a car hard against both sides can only offend by sticking out.
+the bays sit at a 2.26–2.66 m pitch, so a 1.8 m SUV has about 0.45 m of gap to a neighbour
+parked dead centre and a 2.10 m minivan has about 0.23 m, before `PARKING_CLEARANCE` takes
+0.08 m of it. `ParkingLot` works the room out per bay and hands it to the bay, which turns it
+into an angle. A bay with a car hard against both sides can only offend by sticking out —
+which is most of them once minivans are in the row.
 
 Where the neighbour is **already parked**, that room is measured off its real pose,
 crookedness and all, rather than predicted from the middle of its bay. That is the whole
@@ -70,10 +71,13 @@ Violators go down first, in the row's own order. They are what an area is about,
 never the car that moves. Every correctly parked car is then fitted around what is already
 on the road, and there are three answers:
 
-1. **It fits** — usually after shifting across its bay, because a legal pose uses the room
-   it has. A car pushed up against its far line because someone took half its space is what
-   a real street looks like. It never leaves the legal band: an innocent sitting on its own
-   tolerance line would read as a violation, and the player's read is the game.
+1. **It fits** — usually after shifting across its bay and straightening up, because a legal
+   pose uses the room it has. A car pushed up against its far line, sitting square, because
+   someone took half its space is what a real street looks like. Sitting out of square costs
+   width on *both* sides at once and the shift can only pay for one of them, so the angle is
+   bounded by the room before it is rolled rather than clamped afterwards. It never leaves
+   the legal band either way: an innocent sitting on its own tolerance line would read as a
+   violation, and the player's read is the game.
 2. **It does not fit, but the area has room elsewhere.** Its bay is left empty and the car
    takes the next bay in the section that will have it, checked exactly the same way. Bays
    pinned `EMPTY` are not offered — an author who marked a bay never-occupied meant it.
@@ -86,12 +90,13 @@ it runs before anything is instanced — a bay that cannot take a car costs a re
 rather than a node that has to be freed again. It is the authority. The room maths above
 decides where a car aims; this decides whether it parks there.
 
-Roughly one correctly parked car in eight is crowded out of its bay in the row as it stands
-today, and most of those find nowhere else in their own small section to go. That is the
-feature working. What is *not* fine is an area ending up under its `min_innocents`, and the
-lot says so in the Output panel when it does, naming the area: that is a row pitched too
-tightly for the violations it is being asked to hold. `Stop2` — up to two violators across
-three bays — is the one in this level that hits it.
+Roughly one correctly parked car in thirty is crowded out of its bay in the row as it stands
+today, leaving about a quarter of a bay empty per area on top of the occupancy roll; most of
+those cars find nowhere else in their own small section to go. That is the feature working.
+What is *not* fine is an area ending up under its `min_innocents`, and the lot says so in
+the Output panel when it does, naming the area: that is a row pitched too tightly for the
+violations it is being asked to hold. `Stop2` — up to two violators across three bays — is
+the one in this level that hits it, on about 3% of its runs.
 
 The upshot: violations stay unmistakable and no two cars ever share the same patch of road.
 

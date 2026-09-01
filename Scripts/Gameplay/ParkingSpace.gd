@@ -239,19 +239,39 @@ func get_occupant() -> Node3D:
 ## A pose inside the bay's own tolerance, fitted into whatever room is left over
 ## once the badly parked cars have taken theirs.
 ##
-## The yaw is rolled first because it decides how much of the bay this car needs:
+## The yaw is settled first because it decides how much of the bay this car needs:
 ## a car sitting even slightly crooked reaches further across than its own width,
 ## and in a tight row that overhang is the difference between fitting beside a bad
-## park and not.
+## park and not. What is left of the room after paying for it is what the car has
+## to shift across in.
 func _legal_pose(rng: RandomNumberGenerator, room: Vector2,
 		car_footprint: Vector2) -> Transform3D:
-	var yaw := rng.randf_range(-legal_yaw_degrees, legal_yaw_degrees) * LEGAL_JITTER
+	var ceiling := _legal_yaw_ceiling(room, car_footprint)
+	var yaw := rng.randf_range(-ceiling, ceiling)
 	var overhang := _across(car_footprint, yaw) - car_footprint.x * 0.5
 	return _pose(
 			_legal_lateral(rng, Vector2(room.x - overhang, room.y - overhang)),
 			rng.randf_range(-legal_longitudinal, legal_longitudinal) * LEGAL_JITTER,
 			yaw,
 			rng.randf() < REVERSED_CHANCE)
+
+
+## The most crookedness a correctly parked car here can afford, given its room.
+##
+## Bounded before the angle is rolled rather than clamped after, because a car
+## that has already been turned cannot be untangled by shifting it: sitting out of
+## square costs width on *both* sides at once, and the shift across the bay can
+## only pay for one of them. Rolling an angle the bay cannot afford and then
+## shifting anyway is how a legally parked car ends up reaching further across the
+## row than the room it was given -- which nothing catches when the bay it reaches
+## into belongs to a section the run has not filled yet.
+func _legal_yaw_ceiling(room: Vector2, car_footprint: Vector2) -> float:
+	# The shift can buy back a legal_give() on the tighter side, and what is spare
+	# on one side cannot pay for the other, so the two sides also have to average
+	# out. Whichever binds first is the overhang this car can afford.
+	var slack := minf(minf(room.x, room.y) + legal_give(), (room.x + room.y) * 0.5)
+	return clampf(_yaw_ceiling(slack, car_footprint), 0.0,
+			legal_yaw_degrees * LEGAL_JITTER)
 
 
 ## Where across the bay a legally parked car sits, given the room it has.
@@ -261,15 +281,17 @@ func _legal_pose(rng: RandomNumberGenerator, room: Vector2,
 ## the room allows, which is what lets an innocent park beside a violator at all
 ## -- shifted up against the far line because someone took half its space is
 ## exactly what a real street looks like. When the room asks for more than the
-## band has to give, this returns the most it can and [ParkingLot] finds that car
-## another bay.
+## band has to give, this returns the least this car can be in anybody's way and
+## [ParkingLot] decides whether that will do.
 func _legal_lateral(rng: RandomNumberGenerator, room: Vector2) -> float:
 	var give := legal_give()
 	var low := maxf(-give, -room.x)
 	var high := minf(give, room.y)
 	if low > high:
-		# Crowded from both sides: as far from the tighter one as the band allows.
-		return -give if room.x > room.y else give
+		# Crowded from both sides by more than the band can answer. Midway between
+		# the two is the least this car can be in anybody's way; whether that is
+		# little enough to park here at all is [ParkingLot]'s call, not the bay's.
+		return clampf((room.y - room.x) * 0.5, -give, give)
 	return rng.randf_range(low, high)
 
 

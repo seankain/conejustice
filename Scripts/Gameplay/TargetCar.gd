@@ -14,6 +14,11 @@ extends StaticBody3D
 ## settle_time without interruption, which is what rejects a graze: a cone that
 ## clips the bumper and rolls into the gutter is never still while touching.
 
+## The physics layer cones are thrown on, from the table in [ConeBody]. A zone
+## that does not mask it never sees one, which is checked at _ready because the
+## symptom otherwise is a car that simply cannot be coned.
+const CONE_LAYER := 4
+
 ## Whether this car is parked illegally. Written by [ParkingLot] from the pose
 ## the car was actually placed at, so it always agrees with what the player can
 ## see. Defaults true so a car authored directly into a level is a target, which
@@ -63,6 +68,29 @@ func _ready() -> void:
 	add_to_group("target_cars")
 	_catcher.body_entered.connect(_on_catcher_body_entered)
 	_catcher.body_exited.connect(_on_catcher_body_exited)
+	_verify_zones()
+
+
+## Warns when this car's zones cannot see a cone.
+##
+## An Area3D whose collision_mask leaves out the cone layer never fires
+## body_entered, so nothing about this car is wired wrong and nothing errors --
+## it just cannot be coned, and on a violator that is a section the player can
+## never clear. There is no way to see it from the model, and the throw that
+## proves it is a throw that looks like it landed.
+##
+## A vehicle scene built from scratch rather than duplicated from an existing one
+## is how it happens: Area3D defaults to layer 1, mask 1, and the cones are on
+## neither.
+func _verify_zones() -> void:
+	var zones: Array[Area3D] = [_catcher, _roof]
+	for zone in zones:
+		if zone.collision_mask & CONE_LAYER != 0:
+			continue
+		push_warning(("%s: %s has collision_mask %d, which leaves out the cone layer "
+				% [name, zone.name, zone.collision_mask])
+				+ "(%d), so it can never see a cone. " % CONE_LAYER
+				+ "This car cannot be coned until that is set.")
 
 
 func _physics_process(delta: float) -> void:
