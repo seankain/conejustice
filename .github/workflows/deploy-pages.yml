@@ -1,0 +1,129 @@
+name: Deploy web export to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Only the deploy job needs write scopes, so they are granted there rather than here.
+permissions:
+  contents: read
+
+# Queue Pages deployments instead of cancelling them, so main always ends up published
+# from its most recent successful build.
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # The editor and the export templates must come from the same Godot release. The
+  # checksums are the SHA-512 values published for that release in godotengine/godot-builds
+  # (releases/godot-<version>.json). Bump all three together — see README, "Deployment".
+  GODOT_VERSION: 4.7.2-stable
+  GODOT_EDITOR_SHA512: 9aa00f7a605200940bce3027a567b782f49bd8e940dd06ae9e987bd65aee1b1467edd56ed84fcdcbdd44354bf613bdbb4e5d2913e925850368e150c59ed54c65
+  GODOT_TEMPLATES_SHA512: ca4d71c4d7b81dfc15d1a98baa07534aa95b03fdda78a0075b06672e1648d2e5f40980c9adc28d23e1b92e732ee7bf3461997aa804af74ec2fcd7a93ccb84079
+  EXPORT_PRESET: Web
+  BUILD_DIR: build/web
+
+jobs:
+  build:
+    name: Export web build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Restore cached Godot editor and export templates
+        id: godot-cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/godot-bin
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-linux-x86_64-web
+
+      - name: Install Godot
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          base_url="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}"
+          editor_zip="Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          templates_tpz="Godot_v${GODOT_VERSION}_export_templates.tpz"
+          tmp="$(mktemp -d)"
+
+          curl -fsSL --retry 3 --retry-all-errors -o "${tmp}/${editor_zip}" "${base_url}/${editor_zip}"
+          curl -fsSL --retry 3 --retry-all-errors -o "${tmp}/${templates_tpz}" "${base_url}/${templates_tpz}"
+
+          # Fail closed unless the downloads are bit-for-bit what the release published.
+          echo "${GODOT_EDITOR_SHA512}  ${tmp}/${editor_zip}" | sha512sum --check --strict -
+          echo "${GODOT_TEMPLATES_SHA512}  ${tmp}/${templates_tpz}" | sha512sum --check --strict -
+
+          unzip -q "${tmp}/${editor_zip}" -d "${tmp}/editor"
+          editor_bin="$(find "${tmp}/editor" -maxdepth 2 -type f -name 'Godot_v*_linux.x86_64' -print -quit)"
+          mkdir -p "${HOME}/godot-bin"
+          install -m 0755 "${editor_bin}" "${HOME}/godot-bin/godot"
+
+          # The .tpz is a zip of a templates/ directory whose version.txt (e.g. "4.7.2.stable")
+          # names the directory the editor looks the templates up in.
+          unzip -q "${tmp}/${templates_tpz}" -d "${tmp}/templates"
+          src="$(dirname "$(find "${tmp}/templates" -name version.txt -print -quit)")"
+          dest="${HOME}/.local/share/godot/export_templates/$(cat "${src}/version.txt")"
+          mkdir -p "${dest}"
+          # Keep only the web templates; the full set is about a gigabyte to cache.
+          cp "${src}/version.txt" "${src}"/web_*.zip "${dest}/"
+          rm -rf "${tmp}"
+
+      - name: Put Godot on PATH
+        run: echo "${HOME}/godot-bin" >> "${GITHUB_PATH}"
+
+      - name: Report Godot version
+        run: godot --version
+
+      - name: Import project resources
+        # A fresh checkout has no .godot/, and resources must be imported before they can be packed.
+        run: godot --headless --import
+
+      - name: Export web build
+        run: |
+          set -euo pipefail
+          # --export-release requires the target directory to already exist.
+          mkdir -p "${BUILD_DIR}"
+          godot --headless --export-release "${EXPORT_PRESET}" "${BUILD_DIR}/index.html"
+
+      - name: Verify export output
+        # A headless export can report success while producing nothing usable, so check the
+        # engine, the pack and the loader are all present and non-empty before publishing.
+        run: |
+          set -euo pipefail
+          for file in index.html index.js index.wasm index.pck; do
+            if [ ! -s "${BUILD_DIR}/${file}" ]; then
+              echo "Export produced no ${file} in ${BUILD_DIR}" >&2
+              exit 1
+            fi
+          done
+          ls -lh "${BUILD_DIR}"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: ${{ env.BUILD_DIR }}
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    # Pull request runs build the export as a check, but only main is ever published.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write # to publish the deployment
+      id-token: write # to prove the deployment came from this workflow
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy artifact
+        id: deployment
+        uses: actions/deploy-pages@v5
