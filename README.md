@@ -74,6 +74,31 @@ python3 -m http.server --directory Export/export 8000
 
 Then visit <http://localhost:8000/WebProject.html>.
 
+## Deployment
+
+Every push to `main` is exported and published to GitHub Pages by
+[`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml):
+
+<https://seankain.github.io/conejustice/>
+
+The workflow installs the pinned Godot editor and its export templates (checking both downloads
+against the SHA-512 checksums published with that release), imports the project, runs the `Web`
+preset into `build/web/index.html`, verifies the export actually produced `index.html`,
+`index.js`, `index.wasm` and `index.pck`, and uploads that directory as the Pages artifact. Pull
+requests against `main` run the same build as a check, but only `main` is ever deployed.
+
+One-time repository setup: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+Until that is set there is no Actions-based Pages source to publish to, and the deploy job fails.
+
+The `Web` preset exports without thread support, so the build needs no `Cross-Origin-Opener-Policy`
+or `Cross-Origin-Embedder-Policy` headers. That is what makes it hostable on GitHub Pages, which
+does not let you configure response headers; turning on **Thread Support** or **Extension Support**
+in the preset would require those headers and break the deployment.
+
+To change engine version, update `GODOT_VERSION` in the workflow together with both checksums,
+which are published in `releases/godot-<version>.json` in
+[godotengine/godot-builds](https://github.com/godotengine/godot-builds).
+
 ## Status
 
 Early prototype. The scenes, models, and web export pipeline are in place, and the core loop —
