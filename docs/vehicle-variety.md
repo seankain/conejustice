@@ -79,9 +79,11 @@ so the painted bays already overlap slightly at the tight end.
 - **Hard ceiling:** 2.4 m wide, 5.2 m long. Past either, `fits()` rejects the vehicle and
   the bay stays empty.
 - **Practical ceiling:** about 2.0 m wide. Above that there is almost no room left beside
-  the bay once a neighbour's own drift is allowed for, so the vehicle can still be parked
-  but can only ever offend by sticking out — the one fault that costs no lateral room.
-  Everything still works; the street just gets duller.
+  the bay once the gap is shared with a neighbour, so the vehicle can still be parked but
+  can only ever offend by sticking out — the one fault that costs no lateral room — and the
+  correctly parked cars beside a wide violator start being crowded out of their bays
+  altogether. Everything still works; the street just gets duller and gappier. See
+  [parking-bays.md](parking-bays.md) for what happens to a car with nowhere to park.
 
 If the models you are importing are vans or pickups, budget a pass on bay spacing rather
 than fighting the room maths.
@@ -93,6 +95,14 @@ than fighting the room maths.
    `ConeCatcher` and `RoofZone` around the new body. There is no substitute for doing this
    against the actual model: those two volumes decide what counts as a landing, which is the
    one thing in this game that should never be derived from a guess.
+
+   Duplicate it rather than building the node tree fresh, because the physics layers come
+   with it: the body sits on the cars layer (2), and both zones are `collision_layer = 0`,
+   `collision_mask = 4` — the cone layer and nothing else (see the table at the top of
+   [`ConeBody`](../Scripts/Gameplay/ConeBody.gd)). An `Area3D` added from scratch defaults to
+   layer 1, mask 1, never sees a cone, and leaves a car that looks perfect and cannot be
+   coned — which on a violator is a section the player can never clear. `TargetCar` warns
+   about it in the Output panel at load, but nothing about the car itself looks wrong.
 3. Set `marker_height` and `marker_size` on the scene's `TargetCar`, so its HUD bracket
    hangs at mid-body rather than through the windscreen.
 4. Run `Tools/derive_vehicle_profile.gd` from the editor (**File → Run** with the script

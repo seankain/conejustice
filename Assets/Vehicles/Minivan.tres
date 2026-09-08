@@ -6,4 +6,6 @@
 [resource]
 script = ExtResource("1_lyj2q")
 scene = ExtResource("1_00kbw")
+footprint = Vector2(2.102, 5.186)
+bay_height_offset = -0.098
 metadata/_custom_type_script = "uid://bvv45qviv5tay"
