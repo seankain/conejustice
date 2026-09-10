@@ -86,18 +86,38 @@ jobs:
         # A fresh checkout has no .godot/, and resources must be imported before they can be packed.
         run: godot --headless --import
 
+      - name: Verify imported resources
+        # An importer that cannot run headlessly (Blender, for one) aborts the whole reimport
+        # pass, leaving .godot/imported empty. The export still succeeds after that, so catch
+        # it here where the cause is obvious rather than in a silently textureless build.
+        run: |
+          set -euo pipefail
+          count="$(find .godot/imported -type f 2>/dev/null | wc -l)"
+          if [ "${count}" -eq 0 ]; then
+            echo "godot --headless --import produced no imported resources" >&2
+            exit 1
+          fi
+          echo "Imported ${count} resource files."
+
       - name: Export web build
         run: |
           set -euo pipefail
           # --export-release requires the target directory to already exist.
           mkdir -p "${BUILD_DIR}"
-          godot --headless --export-release "${EXPORT_PRESET}" "${BUILD_DIR}/index.html"
+          godot --headless --export-release "${EXPORT_PRESET}" "${BUILD_DIR}/index.html" 2>&1 | tee export.log
 
       - name: Verify export output
         # A headless export can report success while producing nothing usable, so check the
         # engine, the pack and the loader are all present and non-empty before publishing.
         run: |
           set -euo pipefail
+          # A resource the packer cannot read is stored as an empty entry rather than failing
+          # the export, so the game loads with untextured models and silent audio. The only
+          # signal is an error naming res://.godot/imported -- treat one as fatal.
+          if grep -E "^ERROR:.*res://\.godot/imported" export.log; then
+            echo "Export could not read imported resources (see the errors above)" >&2
+            exit 1
+          fi
           for file in index.html index.js index.wasm index.pck; do
             if [ ! -s "${BUILD_DIR}/${file}" ]; then
               echo "Export produced no ${file} in ${BUILD_DIR}" >&2
