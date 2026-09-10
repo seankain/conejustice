@@ -25,6 +25,10 @@ SfxPlayer="*res://Scripts/Audio/SfxPlayer.gd"
 
 project/assembly_name="conejustice"
 
+[filesystem]
+
+import/blender/enabled=false
+
 [input]
 
 throw_cone={

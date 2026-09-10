@@ -87,6 +87,22 @@ preset into `build/web/index.html`, verifies the export actually produced `index
 `index.js`, `index.wasm` and `index.pck`, and uploads that directory as the Pages artifact. Pull
 requests against `main` run the same build as a check, but only `main` is ever deployed.
 
+### Blender import is off
+
+`filesystem/import/blender/enabled=false` in `project.godot`. Godot's `.blend` importer shells out
+to Blender, and on a runner without it the importer fails during the filesystem scan and takes the
+**entire** reimport pass down with it — every texture and every sound is then packed as an empty
+entry, so the build loads and plays with white models and no audio while the workflow still reports
+success. Nothing loads the `.blend` at runtime: `ThirdParty/LowPolyTrees/LowPolyTrees.blend` was
+imported once with its meshes and materials saved next to it as `.res`/`.tres`, and
+`Scenes/Tree1.tscn` references those. The `.blend` and its `.import` stay in the repo for
+provenance and for the import settings; turn the setting back on locally (and install Blender) if
+you need to re-import the trees.
+
+Two guards keep that failure mode from reaching the site again: the build fails if
+`godot --headless --import` produces no imported resources at all, and it fails if the export logs
+an error naming `res://.godot/imported`, which is the only signal that a resource was packed empty.
+
 One-time repository setup: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 Until that is set there is no Actions-based Pages source to publish to, and the deploy job fails.
 
