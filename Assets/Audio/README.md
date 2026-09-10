@@ -39,3 +39,22 @@ python3 Tools/generate_placeholder_audio.py Assets/Audio
 ```
 
 Seeded per file, so regenerating produces identical output.
+
+## Music tracks
+
+`music_track1.mp3`, `music_track2.mp3` and `music_track3.mp3` are the background music,
+and are *not* produced by the generator above. `Scripts/Audio/MusicPlayer.gd` draws one of
+them at random when the game starts and draws another the moment that one ends, so the
+music runs continuously and never plays the same track twice in a row.
+
+Adding a track means dropping the file in here and adding its name to `TRACK_FILES` in
+`MusicPlayer.gd`; a name listed there with no file behind it warns and is left out of the
+rotation rather than breaking the autoload.
+
+Leave **Loop** off in each track's import settings. A looping stream never reports that it
+finished, so the rotation would stop on the looping track and play it forever. The player
+forces looping off on load for exactly that reason, which also means ticking the box in the
+editor has no effect here.
+
+If a track came from elsewhere, move it to `ThirdParty/` and record its licence with the
+other third-party credits.
