@@ -59,6 +59,13 @@ size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 26
 text = "START"
 
+[node name="MenuButton" type="Button" parent="Title/Box"]
+custom_minimum_size = Vector2(240, 40)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 18
+text = "PARKADE MENU"
+
 [node name="RunOver" type="ColorRect" parent="."]
 visible = false
 anchor_right = 1.0
@@ -103,3 +110,10 @@ layout_mode = 2
 size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 26
 text = "TRY AGAIN"
+
+[node name="MenuButton" type="Button" parent="RunOver/Box"]
+custom_minimum_size = Vector2(240, 40)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 18
+text = "PARKADE MENU"
