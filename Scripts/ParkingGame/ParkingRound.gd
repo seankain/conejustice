@@ -146,9 +146,12 @@ func end_round() -> void:
 		car.input_enabled = false
 	if _camera != null:
 		_camera.start_idle_rotation()
+	# The card first, then the reason. The HUD clears whatever banner was up when
+	# a round ends -- a "GO!" from a round the player finished in under three
+	# seconds, for one -- so the failure has to be said after that, not before.
+	round_ended.emit(data)
 	if not data.parked_in_space:
 		message.emit(MESSAGE_FAILED)
-	round_ended.emit(data)
 
 
 ## Starts a round. [param advance] is the whole difference between the source's

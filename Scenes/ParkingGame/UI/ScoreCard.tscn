@@ -1,0 +1,103 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/ParkingGame/ScoreCard.gd" id="1_card"]
+
+[node name="ScoreCard" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_card")
+
+[node name="Panel" type="PanelContainer" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -210.0
+offset_top = -150.0
+offset_right = 210.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Rows" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="Heading" type="Label" parent="Panel/Rows"]
+layout_mode = 2
+text = "ROUND OVER"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 28
+
+[node name="CarsHit" type="HBoxContainer" parent="Panel/Rows"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="Panel/Rows/CarsHit"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "CARS HIT"
+theme_override_font_sizes/font_size = 20
+
+[node name="Value" type="Label" parent="Panel/Rows/CarsHit"]
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="LivingThings" type="HBoxContainer" parent="Panel/Rows"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="Panel/Rows/LivingThings"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "LIVING THINGS HIT"
+theme_override_font_sizes/font_size = 20
+
+[node name="Value" type="Label" parent="Panel/Rows/LivingThings"]
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="Offroad" type="HBoxContainer" parent="Panel/Rows"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="Panel/Rows/Offroad"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "TIME OFF THE TARMAC"
+theme_override_font_sizes/font_size = 20
+
+[node name="Value" type="Label" parent="Panel/Rows/Offroad"]
+layout_mode = 2
+text = "0.0 s"
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="InTheLines" type="HBoxContainer" parent="Panel/Rows"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="Panel/Rows/InTheLines"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "IN THE LINES"
+theme_override_font_sizes/font_size = 20
+
+[node name="Value" type="Label" parent="Panel/Rows/InTheLines"]
+layout_mode = 2
+text = "YES"
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="Grade" type="Label" parent="Panel/Rows"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "A"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 96

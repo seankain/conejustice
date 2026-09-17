@@ -36,6 +36,8 @@ enum State {
 @export var lot_scene: PackedScene
 ## The camera rig, parented to whichever car the player is driving.
 @export var chase_camera_scene: PackedScene
+## Clock, grade and score card. Added with the lot and pointed at the round.
+@export var hud_scene: PackedScene
 
 var state: State = State.SELECT
 
@@ -99,7 +101,18 @@ func _enter_play() -> void:
 		return
 	_lot = lot_scene.instantiate()
 	add_child(_lot)
+	# The HUD goes in before the round, and is connected before the round enters
+	# the tree: the round announces its first level from _ready, and a HUD
+	# connected afterwards would miss the round it is already showing.
+	var hud: ParkingHUD = null
+	if hud_scene != null:
+		hud = hud_scene.instantiate() as ParkingHUD
+		add_child(hud)
 	current_round = ParkingRound.new()
 	current_round.name = "Round"
 	current_round.configure(_lot, _chosen_vehicle, chase_camera_scene, catalog)
+	if hud != null:
+		# Handed the round rather than going looking for it: the source's HUD
+		# resolves /root/Main/Level every frame.
+		hud.follow(current_round)
 	add_child(current_round)
