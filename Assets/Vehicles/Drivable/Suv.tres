@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="DrivableVehicle" format=3]
+
+[ext_resource type="PackedScene" path="res://Scenes/Vehicles/SuvDrivable.tscn" id="1_nd2x6"]
+[ext_resource type="Script" path="res://Scripts/ParkingGame/DrivableVehicle.gd" id="2_t3580"]
+
+[resource]
+script = ExtResource("2_t3580")
+display_name = "SUV"
+chassis = ExtResource("1_nd2x6")

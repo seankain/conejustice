@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="VehicleCatalog" format=3]
+
+[ext_resource type="Script" path="res://Scripts/ParkingGame/VehicleCatalog.gd" id="1_13lrq"]
+[ext_resource type="Script" path="res://Scripts/ParkingGame/DrivableVehicle.gd" id="2_h4wy6"]
+[ext_resource type="Resource" path="res://Assets/Vehicles/Drivable/Suv.tres" id="3_7nmqf"]
+[ext_resource type="Resource" path="res://Assets/Vehicles/Drivable/Minivan.tres" id="4_28i2t"]
+
+[resource]
+script = ExtResource("1_13lrq")
+vehicles = Array[ExtResource("2_h4wy6")]([ExtResource("3_7nmqf"), ExtResource("4_28i2t")])

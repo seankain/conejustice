@@ -26,6 +26,9 @@ enum State {
 	PLAY, ## The lot is built and the round is running.
 }
 
+## Every car the cabinet offers, in carousel order. The round starts in the
+## first one when nothing was picked.
+@export var catalog: VehicleCatalog
 ## The carousel (T10). Unset skips selection and plays the default car, which is
 ## what the cabinet does until that screen exists.
 @export var vehicle_select_scene: PackedScene
@@ -34,9 +37,10 @@ enum State {
 
 var state: State = State.SELECT
 
-## The car the player confirmed, handed to the round when it starts. Typed loose
-## until the vehicle catalog exists (T4).
-var _chosen_vehicle: Resource = null
+## The car the player confirmed, handed to the round when it starts. Falls back
+## to the catalog's first entry, so the cabinet is playable before the select
+## screen exists and after a select screen that was skipped.
+var _chosen_vehicle: DrivableVehicle = null
 var _select: Node = null
 var _lot: Node = null
 
@@ -63,7 +67,7 @@ func _enter_select() -> void:
 	add_child(_select)
 
 
-func _on_vehicle_confirmed(vehicle: Resource) -> void:
+func _on_vehicle_confirmed(vehicle: DrivableVehicle) -> void:
 	_chosen_vehicle = vehicle
 	# Freed rather than hidden: it is a 3D scene with lights and spinning cars in
 	# it, and none of that should still be drawing behind the lot.
@@ -76,6 +80,8 @@ func _on_vehicle_confirmed(vehicle: Resource) -> void:
 ## Builds the lot and starts the round in [member _chosen_vehicle].
 func _enter_play() -> void:
 	state = State.PLAY
+	if _chosen_vehicle == null:
+		_chosen_vehicle = catalog.first() if catalog != null else null
 	if lot_scene == null:
 		# T2 ships the shell before the lot exists. Stated once, at load, rather
 		# than left as an empty screen with no explanation.

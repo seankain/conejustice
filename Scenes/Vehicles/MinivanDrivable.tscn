@@ -1,0 +1,118 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="ArrayMesh" uid="uid://b25j3f2d14sht" path="res://ThirdParty/Models/GenericPassengerCarsPack/Minivan_body.res" id="1_minivan_body"]
+[ext_resource type="ArrayMesh" uid="uid://chs08s82h8nx6" path="res://ThirdParty/Models/GenericPassengerCarsPack/MinivanWheel.res" id="2_minivan_wheel"]
+[ext_resource type="Script" path="res://Scripts/ParkingGame/PlayerCar.gd" id="3_player_car"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_minivan_lower"]
+size = Vector3(2.0, 0.95, 5.05)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_minivan_cabin"]
+size = Vector3(1.85, 0.85, 3.3)
+
+[node name="MinivanDrivable" type="VehicleBody3D" node_paths=PackedStringArray("visuals")]
+mass = 1850.0
+center_of_mass_mode = 1
+center_of_mass = Vector3(0, -0.25, 0)
+contact_monitor = true
+max_contacts_reported = 8
+script = ExtResource("3_player_car")
+visuals = NodePath("Visuals")
+engine_power = 2100.0
+top_speed = 15.0
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(-0.1, 0, 0, 0, -4.371139e-09, 0.1, 0, 0.1, 4.371139e-09, 0, 0.06140679, 0)
+mesh = ExtResource("1_minivan_body")
+
+[node name="WheelFrontLeft" type="Node3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.73, 0.4331559, -1.707)
+
+[node name="Mesh" type="MeshInstance3D" parent="Visuals/WheelFrontLeft"]
+transform = Transform3D(-0.1, 0, -8.742278e-09, 0, 0.1, 0, 8.742278e-09, 0, -0.1, 0, 0, 0)
+mesh = ExtResource("2_minivan_wheel")
+
+[node name="WheelFrontRight" type="Node3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.73, 0.4331559, -1.707)
+
+[node name="Mesh" type="MeshInstance3D" parent="Visuals/WheelFrontRight"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 0, 0, 0)
+mesh = ExtResource("2_minivan_wheel")
+
+[node name="WheelRearLeft" type="Node3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.73, 0.4331559, 1.505)
+
+[node name="Mesh" type="MeshInstance3D" parent="Visuals/WheelRearLeft"]
+transform = Transform3D(-0.1, 0, -8.742278e-09, 0, 0.1, 0, 8.742278e-09, 0, -0.1, 0, 0, 0)
+mesh = ExtResource("2_minivan_wheel")
+
+[node name="WheelRearRight" type="Node3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.73, 0.4331559, 1.505)
+
+[node name="Mesh" type="MeshInstance3D" parent="Visuals/WheelRearRight"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 0, 0, 0)
+mesh = ExtResource("2_minivan_wheel")
+
+[node name="BodyShape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.72, -0.03)
+shape = SubResource("BoxShape3D_minivan_lower")
+
+[node name="CabinShape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -0.1)
+shape = SubResource("BoxShape3D_minivan_cabin")
+
+[node name="WheelFrontLeft" type="VehicleWheel3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.73, 0.5931559, -1.707)
+use_as_traction = true
+use_as_steering = true
+wheel_roll_influence = 0.3
+wheel_radius = 0.358
+wheel_rest_length = 0.16
+wheel_friction_slip = 3.5
+suspension_travel = 0.18
+suspension_stiffness = 210.0
+suspension_max_force = 14000.0
+damping_compression = 0.6
+damping_relaxation = 0.8
+
+[node name="WheelFrontRight" type="VehicleWheel3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.73, 0.5931559, -1.707)
+use_as_traction = true
+use_as_steering = true
+wheel_roll_influence = 0.3
+wheel_radius = 0.358
+wheel_rest_length = 0.16
+wheel_friction_slip = 3.5
+suspension_travel = 0.18
+suspension_stiffness = 210.0
+suspension_max_force = 14000.0
+damping_compression = 0.6
+damping_relaxation = 0.8
+
+[node name="WheelRearLeft" type="VehicleWheel3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.73, 0.5931559, 1.505)
+use_as_traction = true
+wheel_roll_influence = 0.3
+wheel_radius = 0.358
+wheel_rest_length = 0.16
+wheel_friction_slip = 3.5
+suspension_travel = 0.18
+suspension_stiffness = 210.0
+suspension_max_force = 14000.0
+damping_compression = 0.6
+damping_relaxation = 0.8
+
+[node name="WheelRearRight" type="VehicleWheel3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.73, 0.5931559, 1.505)
+use_as_traction = true
+wheel_roll_influence = 0.3
+wheel_radius = 0.358
+wheel_rest_length = 0.16
+wheel_friction_slip = 3.5
+suspension_travel = 0.18
+suspension_stiffness = 210.0
+suspension_max_force = 14000.0
+damping_compression = 0.6
+damping_relaxation = 0.8

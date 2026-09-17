@@ -6,3 +6,5 @@
 [resource]
 script = ExtResource("1_profile")
 scene = ExtResource("2_suv")
+footprint = Vector2(2.327, 5.189)
+bay_height_offset = 0.0

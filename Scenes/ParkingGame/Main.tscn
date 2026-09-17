@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://Scripts/ParkingGame/ParkingGame.gd" id="1_parking_game"]
+[ext_resource type="Resource" path="res://Assets/Vehicles/Drivable/Catalog.tres" id="2_catalog"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_parking_game")
+catalog = ExtResource("2_catalog")
