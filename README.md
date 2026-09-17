@@ -76,7 +76,9 @@ playing across cabinets.
 ```
 Scenes/Parkade/  The arcade menu — MainMenu, the project's main scene
 Scenes/          Cone Justice scenes — Main (its root), level, Cone, SUV, Tree1, UI/
-Scripts/         GDScript — Autoload/, Parkade/, Audio/, Camera/, Gameplay/, UI/
+Scenes/ParkingGame/  Parking game scenes — Main (its root)
+Scenes/Vehicles/ Drivable chassis, shared by whichever cabinet wants to drive one
+Scripts/         GDScript — Autoload/, Parkade/, Audio/, Camera/, Gameplay/, ParkingGame/, UI/
 Assets/          First-party assets (vehicle profiles, generated placeholder audio)
 ThirdParty/      Third-party models and textures (cars, building, trees, skybox)
 Tools/           Asset generation scripts

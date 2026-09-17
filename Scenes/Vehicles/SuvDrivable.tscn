@@ -1,0 +1,116 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="ArrayMesh" uid="uid://c6nyq0v72xksn" path="res://ThirdParty/Models/GenericPassengerCarsPack/SUV_body.res" id="1_suv_body"]
+[ext_resource type="ArrayMesh" uid="uid://cew0nx4ymd818" path="res://ThirdParty/Models/GenericPassengerCarsPack/Wheel.res" id="2_suv_wheel"]
+[ext_resource type="Script" path="res://Scripts/ParkingGame/PlayerCar.gd" id="3_player_car"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_suv_lower"]
+size = Vector3(2.2, 0.9, 5.05)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_suv_cabin"]
+size = Vector3(1.95, 0.84, 3.1)
+
+[node name="SuvDrivable" type="VehicleBody3D" node_paths=PackedStringArray("visuals")]
+mass = 1400.0
+center_of_mass_mode = 1
+center_of_mass = Vector3(0, -0.25, 0)
+contact_monitor = true
+max_contacts_reported = 8
+script = ExtResource("3_player_car")
+visuals = NodePath("Visuals")
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="Visuals"]
+transform = Transform3D(1.3113416e-05, 100, -4.371139e-06, 3.8213708e-13, 4.371139e-06, 100, 100, -1.3113416e-05, 1.9106854e-13, 0, 0, 0)
+mesh = ExtResource("1_suv_body")
+
+[node name="WheelFrontLeft" type="Node3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.72, 0.4, -1.66)
+
+[node name="Mesh" type="MeshInstance3D" parent="Visuals/WheelFrontLeft"]
+transform = Transform3D(-0.1, 0, -8.742278e-09, 0, 0.1, 0, 8.742278e-09, 0, -0.1, 0, 0, 0)
+mesh = ExtResource("2_suv_wheel")
+
+[node name="WheelFrontRight" type="Node3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.72, 0.4, -1.66)
+
+[node name="Mesh" type="MeshInstance3D" parent="Visuals/WheelFrontRight"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 0, 0, 0)
+mesh = ExtResource("2_suv_wheel")
+
+[node name="WheelRearLeft" type="Node3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.72, 0.4, 1.42)
+
+[node name="Mesh" type="MeshInstance3D" parent="Visuals/WheelRearLeft"]
+transform = Transform3D(-0.1, 0, -8.742278e-09, 0, 0.1, 0, 8.742278e-09, 0, -0.1, 0, 0, 0)
+mesh = ExtResource("2_suv_wheel")
+
+[node name="WheelRearRight" type="Node3D" parent="Visuals"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.72, 0.4, 1.42)
+
+[node name="Mesh" type="MeshInstance3D" parent="Visuals/WheelRearRight"]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 0, 0, 0)
+mesh = ExtResource("2_suv_wheel")
+
+[node name="BodyShape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.67, -0.05)
+shape = SubResource("BoxShape3D_suv_lower")
+
+[node name="CabinShape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.52, 0.2)
+shape = SubResource("BoxShape3D_suv_cabin")
+
+[node name="WheelFrontLeft" type="VehicleWheel3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.72, 0.56, -1.66)
+use_as_traction = true
+use_as_steering = true
+wheel_roll_influence = 0.3
+wheel_radius = 0.423
+wheel_rest_length = 0.16
+wheel_friction_slip = 3.5
+suspension_travel = 0.18
+suspension_stiffness = 150.0
+suspension_max_force = 12000.0
+damping_compression = 0.6
+damping_relaxation = 0.8
+
+[node name="WheelFrontRight" type="VehicleWheel3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.72, 0.56, -1.66)
+use_as_traction = true
+use_as_steering = true
+wheel_roll_influence = 0.3
+wheel_radius = 0.423
+wheel_rest_length = 0.16
+wheel_friction_slip = 3.5
+suspension_travel = 0.18
+suspension_stiffness = 150.0
+suspension_max_force = 12000.0
+damping_compression = 0.6
+damping_relaxation = 0.8
+
+[node name="WheelRearLeft" type="VehicleWheel3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.72, 0.56, 1.42)
+use_as_traction = true
+wheel_roll_influence = 0.3
+wheel_radius = 0.423
+wheel_rest_length = 0.16
+wheel_friction_slip = 3.5
+suspension_travel = 0.18
+suspension_stiffness = 150.0
+suspension_max_force = 12000.0
+damping_compression = 0.6
+damping_relaxation = 0.8
+
+[node name="WheelRearRight" type="VehicleWheel3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.72, 0.56, 1.42)
+use_as_traction = true
+wheel_roll_influence = 0.3
+wheel_radius = 0.423
+wheel_rest_length = 0.16
+wheel_friction_slip = 3.5
+suspension_travel = 0.18
+suspension_stiffness = 150.0
+suspension_max_force = 12000.0
+damping_compression = 0.6
+damping_relaxation = 0.8

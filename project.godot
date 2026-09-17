@@ -83,6 +83,8 @@ steer_right={
 obstacles="Parking game: nodes the player's car reports hitting, via Obstacle.kind_of()."
 npc_vehicles="Parking game: cars the traffic spawner parked. Cleared between rounds."
 npc_living="Parking game: pedestrians and other living obstacles. Cleared between rounds."
+player_car="Parking game: the car the player drives. The lot's areas test for this rather than for a type."
+respawn="Parking game: where PlayerCar.respawn() puts the car. One per lot."
 
 [physics]
 

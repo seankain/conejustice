@@ -157,6 +157,23 @@ Settle these once; every task below assumes them.
 | `(int)(a / b)` on ints | `a / b` is already integer division; use `/` on ints, `floori()` otherwise |
 | `LINQ .Where().Cast().ToList()` | `filter()`/`map()` on `Array`, or a plain loop |
 
+Two engine facts the port ran into, both measured rather than assumed, and both
+cheaper to know before a scene is authored than after:
+
+- **Godot's `VehicleBody3D` drives towards +Z, not -Z.** Its wheels take their axle from local
+  `-X`, so the forward they push along is `up.cross(axle)` = `+Z` — the opposite of the `-Z` that
+  `look_at`, `ParkingSpace` and every car scene in this repo call forward. A chassis given `+2600`
+  of engine force travels `+Z`. The port keeps `-Z` forward and applies the sign where input meets
+  the engine (`PlayerCar.DRIVE_SIGN`, `STEER_SIGN`) rather than building one car backwards. The
+  source sidesteps this by putting its steering wheels at `+Z`, which is why its box drives at all.
+- **`engine_force` is applied at every wheel marked `use_as_traction`**, so a four-wheel-drive
+  chassis multiplies it by four, and Godot's vehicle has no drag worth the name: without a power
+  curve the car accelerates in a straight line until the lot runs out.
+- **A hand-written `.tscn` needs `node_paths=PackedStringArray("field")` on the node header** for
+  an `@export var field: Node3D` to resolve. Without it the `field = NodePath("Visuals")` line is
+  silently dropped and the reference is null at runtime. Scenes saved from the editor get this for
+  free; scenes written by hand — which is most of this port — do not.
+
 Two structural rules that are not mechanical:
 
 - **Absolute node paths die.** The source reaches across the tree with strings like
