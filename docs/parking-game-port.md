@@ -488,6 +488,30 @@ frame rate reads as a broken game.
 **Done when:** the preset exports, both games play from one build in a browser, and the size and
 frame rate are recorded in this document.
 
+**Measured** on Godot 4.7.2, GL Compatibility, `variant/thread_support=false`:
+
+| | Before the port (`main` at `b6c9776`) | With the parking game |
+| --- | --- | --- |
+| `index.pck` | 86,931,008 B (82.9 MiB) | 88,043,512 B (84.0 MiB) |
+| `index.wasm` | 38 MB | 38 MB — the engine, unchanged |
+
+**The delta is 1,112,504 B, or 1.06 MiB**: the lot and the office building, and nothing else.
+That is the number this task was watching for. Reusing this repo's car meshes means the cars
+cost nothing, and a delta anywhere near 30 MB would have meant the source's car pack had been
+imported by accident.
+
+On the total rather than the delta: the pack is dominated by Cone Justice's 76 MB
+`ThirdParty/Skybox/portland_landing_pad_4k.exr`. Nothing in this port touches it, and it is
+where any serious size work starts.
+
+Played in Chromium (Playwright, software rasteriser) against a local server: the menu comes up,
+the parking game launches into vehicle select, confirming a car builds the lot and starts a round
+with the HUD running, and the console reports no errors.
+
+**No useful frame rate came out of that and none is recorded here.** That run had no GPU, so its
+numbers measure a software rasteriser rather than the game. The select screen and a full lot still
+want a look on real hardware, which is the part of this task a container cannot do.
+
 ### T17 — Open the cabinet
 **Depends on:** T16 · **Size:** S
 

@@ -7,7 +7,7 @@ you back out to the menu from anywhere.
 | Cabinet | State |
 | --- | --- |
 | **Cone Justice** — throw traffic cones at cars parked where they shouldn't be | playable |
-| **Parking Game** — beat the clock, find a space, park it straight | being ported, see [docs/parking-game-port.md](docs/parking-game-port.md) |
+| **Parking Game** — beat the clock, find a space, park it straight | playable |
 
 ## Cone Justice
 
@@ -42,10 +42,13 @@ are already in this repo, so both cabinets share one set of vehicles. Picking th
 on vehicle select first — a carousel of cars turning on plates, in the San Francisco Rush shape —
 and confirming one starts the round in it. Adding a car to the carousel is a resource, not code.
 
-Nothing of it is in this repo yet. [docs/parking-game-port.md](docs/parking-game-port.md) is the
-plan: what the source contains, where each file lands, which prototype defects get fixed rather
-than ported, and the task breakdown to get there. Its menu entry already exists, greyed, and
-opening the cabinet is the last task in that plan.
+[docs/parking-game.md](docs/parking-game.md) documents the game: the round, the grade table and
+where to tune it. [docs/parking-game-port.md](docs/parking-game-port.md) is the plan the port
+followed — what the source contained, which of its defects were fixed on the way across rather
+than carried, and what is still outstanding.
+
+Pedestrians are not in it. They are the riskiest part of the source and the least load-bearing,
+their mesh carries no licence file, and `ParkingRound.pedestrians_enabled` gates them off.
 
 ## The shell
 
@@ -169,10 +172,10 @@ which are published in `releases/godot-<version>.json` in
 
 ## Status
 
-Early prototype. Cone Justice's scenes, models, and web export pipeline are in place, and its core
-loop — throwing, scoring, target validation and the randomised street — plays end to end. The
-Parkade shell is in and lists both cabinets; the parking game is being ported, starting with its
-assets.
+Early prototype, with two cabinets playing. Cone Justice's core loop — throwing, scoring, target
+validation and the randomised street — plays end to end. The parking game plays its own loop end
+to end too: vehicle select, a graded round in a lot filling with parked cars, and levels that get
+shorter and fuller. Pedestrians and an end to the run are the two things the port left open.
 
 ## Credits
 
