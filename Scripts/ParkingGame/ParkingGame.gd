@@ -44,8 +44,11 @@ var state: State = State.SELECT
 ## screen exists and after a select screen that was skipped.
 var _chosen_vehicle: DrivableVehicle = null
 var _select: Node = null
-var _lot: Node = null
-var _car: PlayerCar = null
+var _lot: Node3D = null
+## The round in progress. Held so the HUD can be pointed at it (T12). Named
+## current_round rather than round: a member called round shadows GDScript's own
+## round() inside this class.
+var current_round: ParkingRound = null
 
 
 func _ready() -> void:
@@ -80,10 +83,10 @@ func _on_vehicle_confirmed(vehicle: DrivableVehicle) -> void:
 	_enter_play()
 
 
-## Builds the lot and puts the chosen car in it.
+## Builds the lot and starts a round in the chosen car.
 ##
-## Spawning the car belongs to the round once there is one (T9); until then it
-## lives here, because a lot with nothing to drive cannot be checked.
+## The lot goes in first and on its own: the round finds the bays by group in
+## its own [method Node._ready], so they have to be in the tree before it is.
 func _enter_play() -> void:
 	state = State.PLAY
 	if _chosen_vehicle == null:
@@ -91,23 +94,12 @@ func _enter_play() -> void:
 	if lot_scene == null:
 		push_warning("ParkingGame: no lot scene set, so there is nothing to drive yet.")
 		return
-	_lot = lot_scene.instantiate()
-	add_child(_lot)
-	_spawn_car()
-
-
-## Puts the chosen car on the lot's respawn marker with the camera behind it.
-func _spawn_car() -> void:
 	if _chosen_vehicle == null:
 		push_warning("ParkingGame: no vehicle to drive -- is the catalog empty?")
 		return
-	_car = _chosen_vehicle.spawn()
-	if _car == null:
-		return
-	_lot.add_child(_car)
-	# Placed by the same method the kill plane uses, so there is one definition
-	# of where a car starts and it is the marker in the lot.
-	_car.respawn()
-	if chase_camera_scene == null:
-		return
-	_car.add_child(chase_camera_scene.instantiate())
+	_lot = lot_scene.instantiate()
+	add_child(_lot)
+	current_round = ParkingRound.new()
+	current_round.name = "Round"
+	current_round.configure(_lot, _chosen_vehicle, chase_camera_scene)
+	add_child(current_round)
