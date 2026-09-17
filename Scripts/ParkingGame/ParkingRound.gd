@@ -150,6 +150,7 @@ func end_round() -> void:
 	# a round ends -- a "GO!" from a round the player finished in under three
 	# seconds, for one -- so the failure has to be said after that, not before.
 	round_ended.emit(data)
+	SfxPlayer.play_ui(SfxPlayer.Cue.ROUND_OVER)
 	if not data.parked_in_space:
 		message.emit(MESSAGE_FAILED)
 
@@ -176,6 +177,7 @@ func _start_round(advance: bool) -> void:
 	state = State.ACTIVE
 	round_started.emit(level, seconds_remaining)
 	message.emit(MESSAGE_GO)
+	SfxPlayer.play_ui(SfxPlayer.Cue.ROUND_START)
 
 
 ## Puts the car back on the lot's respawn marker and hands it back to the
@@ -196,6 +198,9 @@ func _spawn_car() -> void:
 	_lot.add_child(car)
 	car.hit_obstacle.connect(_on_hit_obstacle)
 	car.respawned.connect(_on_respawned)
+	var engine := EngineAudio.new()
+	engine.name = "EngineAudio"
+	car.add_child(engine)
 	if _camera_scene == null:
 		return
 	_camera = _camera_scene.instantiate() as ChaseCamera
@@ -277,6 +282,8 @@ func _on_hit_obstacle(kind: Obstacle.Kind) -> void:
 	if state != State.ACTIVE:
 		return
 	data.collisions.append(kind)
+	if car != null:
+		SfxPlayer.play_3d(SfxPlayer.Cue.CAR_IMPACT, car.global_position)
 
 
 ## The player asked for a respawn, or the kill plane gave them one. Either way
