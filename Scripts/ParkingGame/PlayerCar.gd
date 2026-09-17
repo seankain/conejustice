@@ -184,9 +184,20 @@ func _power_fade(forward_speed: float, drive_input: float) -> float:
 
 
 ## How fast the car is going along its own nose, in m/s. Negative is reversing.
-## The round watches this to decide when the car has settled in a space.
 func speed() -> float:
 	return linear_velocity.dot(-global_basis.z)
+
+
+## How fast the car is travelling across the ground, in m/s, ignoring whatever
+## its suspension is doing vertically.
+##
+## This is the number to ask "has it stopped?" with. A car standing still on
+## this chassis still reports a second or two of vertical velocity while the
+## springs settle -- measured at up to 1.9 m/s -- against a planar speed of
+## 0.004. The source asks for [code]LinearVelocity.Length() < 0.02[/code], which
+## that bounce fails for seconds after the player has plainly parked.
+func ground_speed() -> float:
+	return Vector2(linear_velocity.x, linear_velocity.z).length()
 
 
 ## The visuals follow the physics wheels, so steering angle, suspension travel
