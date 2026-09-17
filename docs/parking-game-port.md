@@ -10,6 +10,11 @@ The game is the second cabinet in Parkade. Its menu entry already exists in
 `Scripts/Autoload/Parkade.gd` marked unavailable, pointing at `res://Scenes/ParkingGame/Main.tscn`.
 The last task in this plan is flipping that flag.
 
+The source is a prototype and reads like one: duplicated maths that has already drifted, absolute
+node paths, dead scripts, a scoring rule implemented twice. **It is not ported faithfully.** Every
+defect listed at the bottom is fixed on the way across, and the shared-code extractions below are
+part of the work, not a follow-up.
+
 ## The source, file by file
 
 Version ported from: `seankain/parkingthings@main`, Godot 4.6, C#, GL Compatibility, Jolt.
@@ -21,10 +26,10 @@ Version ported from: `seankain/parkingthings@main`, Godot 4.6, C#, GL Compatibil
 | `Scripts/LevelData.cs` | Per-round tallies, rank/grade maths, tuning constants | `RoundData.gd`, `ParkingRules.gd` |
 | `Scripts/Player.cs` | `VehicleBody3D` driving, respawn, collision reporting | `PlayerCar.gd` |
 | `Scripts/CameraControl.cs` | Spring-arm freelook, snap-back, end-of-round spin | `ChaseCamera.gd` |
-| `Scripts/ParkingSpace.cs` | Live parking score for the bay the player is in | `ParkingBay.gd` |
-| `Scripts/ParkingSpaceArea.cs` | Entry/exit detection, "is a car already here" | folded into `ParkingBay.gd` |
+| `Scripts/ParkingSpace.cs` | Live parking score for the space the player is in | `ScoredParkingSpace.gd` |
+| `Scripts/ParkingSpaceArea.cs` | Entry/exit detection, "is a car already here" | folded into `ScoredParkingSpace.gd` |
 | `Scripts/Spawner.cs` | Instances and frees NPC cars and pedestrians | `TrafficSpawner.gd` |
-| `Scripts/NpcCar.cs` | Parked NPC car, random paint | `NpcCar.gd` |
+| `Scripts/NpcCar.cs` | Parked NPC car, random paint | `ParkedCar.gd` |
 | `Scenes/MobileNpc.cs` | Navigating pedestrian, ragdolls when hit | `Pedestrian.gd` |
 | `Scripts/OffroadArea.cs` | Accumulates time spent off the tarmac | `OffroadZone.gd` |
 | `Scripts/KillPlane.cs` | Respawns a car that fell out of the world | `KillPlane.gd` |
@@ -35,15 +40,18 @@ Version ported from: `seankain/parkingthings@main`, Godot 4.6, C#, GL Compatibil
 | `Scripts/Menu.cs` | Play/resume/quit menu | `PauseMenu.gd` |
 | `Scenes/NpcRagdoll.cs`, `Scripts/RagdollTest.cs`, `Scripts/TestHingeMover.cs`, `Scripts/SkeletonUtils.cs`, `Scripts/SpectatorCamera.cs`, `Scripts/NodePool.cs` | Scratch, dead or unused | not ported — see [Not being ported](#not-being-ported) |
 
-Scenes: `level.tscn`, `simple_player.tscn`, `simple_npc.tscn`, `parking_space.tscn`, `hud.tscn`,
-`debug_hud.tscn`, `Menu.tscn`, `Main.tscn`, `HumanNpc.tscn`. `player.tscn`, `nissan_sentra.tscn`,
+Scenes: `level.tscn`, `parking_space.tscn`, `hud.tscn`, `debug_hud.tscn`, `Menu.tscn`, `Main.tscn`,
+`HumanNpc.tscn`. `simple_player.tscn` and `simple_npc.tscn` are box-primitive placeholder cars and
+are **not** ported — see [Vehicles](#vehicles). `player.tscn`, `nissan_sentra.tscn`,
 `RagdollTest.tscn` and `test_hinge.tscn` are not reachable from `level.tscn` and are left behind.
 
 ## Where it lands
 
 ```
-Scenes/ParkingGame/          Main.tscn (game root), Lot.tscn, PlayerCar.tscn, NpcCar.tscn,
-                             ParkingBay.tscn, Pedestrian.tscn, UI/
+Scenes/ParkingGame/          Main.tscn (game root), Lot.tscn, ScoredParkingSpace.tscn,
+                             Pedestrian.tscn, UI/
+Scenes/Vehicles/             drivable chassis shared by both cabinets' future needs
+Assets/Vehicles/Drivable/    DrivableVehicle resources — the vehicle-select catalog
 Scripts/ParkingGame/         one .gd per row of the table above
 ThirdParty/Models/ParkingLot/, OfficeBuilding/, Pedestrian/
 ThirdParty/Fonts/            the two fonts the HUD uses
@@ -53,18 +61,69 @@ Cone Justice keeps `Scenes/Main.tscn` and `Scripts/{Gameplay,UI,Camera}/` where 
 them under `Scenes/ConeJustice/` would be tidier and is deliberately not part of this port: it
 touches every scene in the repo and would bury the parking game's diff.
 
-**Names must not collide.** `class_name` is global in GDScript, so two scripts claiming one name
-is a hard parse error, and the two games overlap heavily in vocabulary. Cone Justice already owns
-`ParkingSpace`, `ParkingLot`, `HUD`, `ScoreManager`, `SectionManager`, `SectionTimer`, `TargetCar`,
-`CameraRig`, `CameraStop`, `CameraTrack`, `ConeThrower`, `ConeBody`, `RunStats`, `VehicleProfile`,
-`Screens`, `Crosshair`, `TargetMarkers`, `SectionTransition`, `ConeIcon`, `ConeMagazine`. Hence
-`ParkingBay` rather than `ParkingSpace`, and `ParkingHUD` rather than `Hud` — `Hud` and `HUD`
-differing only in case would parse and would be a trap.
+### Naming
+
+`class_name` is global in GDScript, so two scripts claiming one name is a hard parse error, and the
+two games overlap heavily in vocabulary. Cone Justice already owns `ParkingSpace`, `ParkingLot`,
+`HUD`, `ScoreManager`, `SectionManager`, `SectionTimer`, `TargetCar`, `CameraRig`, `CameraStop`,
+`CameraTrack`, `ConeThrower`, `ConeBody`, `RunStats`, `VehicleProfile`, `Screens`, `Crosshair`,
+`TargetMarkers`, `SectionTransition`, `ConeIcon`, `ConeMagazine`.
+
+The collision that matters is the parking space, because both games have one and they are not the
+same thing:
+
+| | Cone Justice `ParkingSpace` | Parking Game `ScoredParkingSpace` |
+| --- | --- | --- |
+| What it is | A painted bay the lot parks a car into | A bay that watches the player park in it |
+| Knows about | Its own pose and how much room is beside it | Angle, distance off centre, which lines are crossed, what is occupying it |
+| Contains | A marker and its tolerances | Three `Area3D`s — the bay volume and the two painted lines |
+| Decides | Whether the car in it looks legal, at spawn time | The player's grade, continuously, and when the round ends |
+
+So the name says what the extra machinery is for: this is the space that **scores you**.
+(`MeasuredParkingSpace` says the same about the `Area3D`s; `Scored` was picked because the grade,
+not the measurement, is what the player sees.) The other renames follow the same rule —
+`ParkingHUD` rather than `Hud`, since `Hud` and `HUD` differing only in case would parse and would
+be a trap, and `ParkedCar` rather than `NpcCar`, since the NPC cars never drive.
+
+### State
 
 The two autoloads are Cone Justice's, not the arcade's: `GameState` holds cone counts and a run
 state enum that means nothing here, and `EventBus` is a wall of cone signals. **The parking game
 adds no autoload.** Its state lives on `ParkingRound`, which is what the source does anyway, and
 its nodes talk over ordinary signals. `Parkade`, `SfxPlayer` and `MusicPlayer` are shared.
+
+## Vehicles
+
+The source drives a box. `simple_player.tscn` and `simple_npc.tscn` are `VehicleBody3D`s built from
+primitive meshes, and the one scene with a real car on it — `player.tscn`, on the 30 MB
+`generic-passenger-car-pack` — is not reachable from the level.
+
+**This repo already has cars.** Cone Justice ships `ThirdParty/Models/GenericPassengerCarsPack/`
+with `SUV_body.res`, `Minivan_body.res`, `Wheel.res` and `MinivanWheel.res`, mounted in
+`Scenes/SUV.tscn` and `Scenes/Minivan.tscn`. The parking game uses those meshes, which means the
+source's car pack is never imported, the primitives are never ported, and both cabinets show the
+same vehicles — the thing that makes a **vehicle-select menu** worth building later.
+
+What can and cannot be reused from those scenes:
+
+- **The meshes and their transforms: reuse exactly.** The body mesh sits under a basis that is a
+  permutation of the axes scaled by 100 — the `.res` files are authored in centimetres and not
+  Y-forward. Copy the transform out of `Scenes/SUV.tscn` rather than re-deriving it.
+- **The wheel placements: reuse as `VehicleWheel3D` positions.** The SUV's four wheel meshes sit at
+  y ≈ 0.40, x ≈ ±0.72, z ≈ −1.69 and +1.42, at mesh scale 0.1 — a wheel radius near 0.40 m and a
+  wheelbase near 3.1 m, which is the starting point for the wheel nodes rather than a guess.
+- **The collision shape: cannot be reused.** `Scenes/SUV.tscn` collides with a
+  `ConcavePolygonShape3D`, which Godot only supports on static bodies. A `VehicleBody3D` needs a
+  convex hull or a box; the drivable chassis gets its own.
+- **`ConeCatcher`, `RoofZone`, `collision_layer = 2` and `TargetCar.gd`: leave behind.** They are
+  how a car receives a cone, and nothing in the parking game throws one.
+
+So the mesh set is shared and the body is not: Cone Justice's cars stay `StaticBody3D` targets, the
+parking game's are `VehicleBody3D` chassis, and neither scene changes when the other does.
+
+`VehicleProfile` (Cone Justice's spawn-time footprint data) is left alone. The drivable side gets
+its own `DrivableVehicle` resource in T4, because what the lot needs to know before a car exists
+and what a select menu needs to show are different lists.
 
 ## Translation rules
 
@@ -93,22 +152,40 @@ Two structural rules that are not mechanical:
   itself; C# allows it inside one assembly, GDScript does not let you emit another object's
   signal. The killer calls a method on the car, and the car emits.
 
+## Shared code, not copied code
+
+The source's duplication is the main thing being fixed. Each of these is one implementation in the
+port, and the task that owns it is named:
+
+| Duplicated in the source | Becomes |
+| --- | --- |
+| Rank maths in both `LevelData.CalculateRank` and `ParkingSpace.CalculateCurrentParkingScore` — already drifted, only the second counts line crossings | one `RoundData.grade()` (T8) |
+| `Level.ResetLevel` and `Level.NextLevel`, near-identical, one building `LevelData` twice | one `_start_round(advance: bool)` (T9) |
+| `ParkingSpace` + `ParkingSpaceArea`, a two-node relay for one bay — the source's own TODO calls it needless | one `ScoredParkingSpace.gd` (T7) |
+| `MAX_STEER`/`SteeringSpeed`/`ENGINE_POWER` on both `Player` and `NpcCar`, where `NpcCar` never drives (its `_PhysicsProcess` is entirely commented out) | one chassis scene; parked cars are the same scene, frozen, with no input (T10) |
+| Seconds-to-clock formatting in both `Hud` and `LevelScoreHudElement` | one formatter (T11) |
+| `Random.Shared` reached for from three files | one seeded `RandomNumberGenerator` per system (T9, T10) |
+
+Across the two cabinets, share only what is genuinely the same thing: the vehicle **meshes**
+(above), the `SfxPlayer`/`MusicPlayer` autoloads, and the Parkade shell. Do not merge the two
+games' state, event or HUD code to save lines — they are different games that happen to both
+involve parking, and the autoload section says why.
+
 ## Assets
 
-Only what `level.tscn` actually reaches is worth importing. The player and NPC cars are built from
-primitive meshes, so the 30 MB `generic-passenger-car-pack` — which only the unused `player.tscn`
-touches — stays out, and with it the duplicate of the car pack this repo already ships under
-`ThirdParty/Models/GenericPassengerCarsPack/`.
+Only what `level.tscn` actually reaches is worth importing, and the cars now come from this repo
+rather than from the source, so the source's 30 MB `generic-passenger-car-pack` — and the duplicate
+it would make of the car pack already under `ThirdParty/` — stays out entirely.
 
 | Asset | Size | Needed for |
 | --- | --- | --- |
 | `Models/auzrea_parking_final/` (glTF + textures) | 256 KB | the lot itself |
 | `Models/low_rise_wall_to_wall_office_building/` | 1.2 MB | the building the pedestrians walk to |
-| `Models/Npcs/` (`.res` mesh + `WalkPhone.res` + texture) | 4.5 MB | the pedestrian (T13 only) |
+| `Models/Npcs/` (`.res` mesh + `WalkPhone.res` + texture) | 4.5 MB | the pedestrian (T14 only) |
 | `UI/Fonts/BasicHandwriting.ttf`, `ThreeDimRightwardsRound.ttf` | 71 KB | the HUD |
 
 That is ~6 MB against a repo that already carries 116 MB under `ThirdParty/`, and ~1.5 MB of it if
-T13 is deferred.
+T14 is deferred.
 
 Licensing: the two Sketchfab models carry `license.txt` (attribution required) — both files come
 across into `ThirdParty/` next to the model and both get a line in the README's Credits section,
@@ -126,7 +203,7 @@ Each task should end on a commit that at least imports and opens headlessly.
 
 Copy the four asset groups above into `ThirdParty/`, rewrite the `res://Models/...` paths in their
 `.import` files and in any scene that references them, let Godot regenerate UIDs, and add the
-credits.
+credits. No vehicle assets are imported.
 
 **Done when:** `godot --headless --import` is clean, every imported file has a `.uid`, both
 `license.txt` files sit beside their model, and the README credits them.
@@ -140,23 +217,47 @@ and shows an empty lot. Add the input actions — `drive_forward`, `drive_back`,
 the `NpcVehicle` and `NpcLiving` global groups. Write `Obstacle.gd`: the `ObstacleType` enum plus
 the one group name that marks a node as hittable.
 
-Do **not** add a `Pause` action: Escape belongs to Parkade. T11 decides what the parking game does
+Do **not** add a `Pause` action: Escape belongs to Parkade. T12 decides what the parking game does
 with it.
 
 **Done when:** `Main.tscn` opens headless with no errors and the actions exist in `project.godot`.
 
-### T3 — Player car
+### T3 — Drivable chassis
 **Depends on:** T2 · **Size:** M
 
-Port `Player.cs` → `PlayerCar.gd` and `simple_player.tscn` → `PlayerCar.tscn`, minus the camera
-(T4). Steering via `move_toward` against `MAX_STEER`, engine force from the drive axis, `R`
-respawns to the `Respawn` group marker, `body_entered` reports what was hit. Signals
+Build `Scenes/Vehicles/SuvDrivable.tscn`: a `VehicleBody3D` carrying the SUV body mesh and four
+`VehicleWheel3D`s with the wheel mesh, placed from the numbers in [Vehicles](#vehicles), on a
+convex collision shape of its own. Port `Player.cs` → `PlayerCar.gd` and put it on the chassis,
+minus the camera (T5): steering via `move_toward` against `max_steer`, engine force from the drive
+axis, `R` respawns to the `Respawn` group marker, `body_entered` reports what was hit. Signals
 `respawned` and `hit_obstacle(kind)` replace the two C# delegates. `_IntegrateForces`'s deferred
 respawn flag is dead weight once respawn is a method — drop it.
 
-**Done when:** the car drives, steers, and respawns to the marker with zeroed velocities.
+Tune mass, engine power, steering rate and suspension against the real body: the source's
+`ENGINE_POWER = 300` was picked for a box.
 
-### T4 — Chase camera
+**Done when:** the SUV drives, steers and brakes convincingly, does not roll over on a normal turn,
+and respawns to the marker with zeroed velocities.
+
+### T4 — Vehicle catalog
+**Depends on:** T3 · **Size:** S
+
+Make the chassis data-driven so that adding a car, and later a select menu, is a resource rather
+than a code change. `DrivableVehicle` (`Resource`): display name, chassis `PackedScene`, mass,
+engine power, max steer, and a thumbnail slot for the menu that does not exist yet. Author
+`Assets/Vehicles/Drivable/Suv.tres` and `Minivan.tres`, with `MinivanDrivable.tscn` built the same
+way as T3 from `Minivan_body.res`/`MinivanWheel.res`. `ParkingRound` spawns the player's car from a
+catalog entry, defaulting to the first.
+
+The select **menu** is out of scope here; what is in scope is that building it later is a scene,
+not a refactor. While in the area: `Assets/Vehicles/SUV.tres` still carries the default 1.8 × 4.5
+footprint and Cone Justice warns about it at every launch — re-run
+`Tools/derive_vehicle_profile.gd` and fix it.
+
+**Done when:** switching the catalog entry in the inspector changes which car the player drives,
+and both cars drive without per-vehicle code.
+
+### T5 — Chase camera
 **Depends on:** T3 · **Size:** S
 
 Port `CameraControl.cs` → `ChaseCamera.gd` on the `SpringArm3D`. Mouse look, idle snap-back after
@@ -168,91 +269,96 @@ never does anything. Clamp the new pitch in radians against `deg_to_rad(tilt_max
 
 **Done when:** look works, pitch is actually limited, and the camera returns to centre on idle.
 
-### T5 — The lot
+### T6 — The lot
 **Depends on:** T3 · **Size:** M
 
 Port `level.tscn` → `Lot.tscn`: geometry, static bodies, lighting, `WorldEnvironment`, respawn
-marker, the twenty bay placements (as plain markers for now), `KillPlane` and `OffroadZone`.
+marker, the twenty space placements (as plain markers for now), `KillPlane` and `OffroadZone`.
 Port `KillPlane.gd` and `OffroadZone.gd`. The `NavigationRegion3D` and `BuildingEntrance` come
-across now even though nothing navigates until T13; baking navigation later against a changed lot
+across now even though nothing navigates until T14; baking navigation later against a changed lot
 is worse than carrying two nodes.
 
-**Done when:** the car drives the whole lot, falling off respawns it, and the offroad zone
-accumulates time.
+The spaces were authored around a box roughly the size of the source's placeholder car. Check they
+still fit the real SUV before building anything on top of them, and move the markers, not the car,
+if they do not.
 
-### T6 — Parking bay
-**Depends on:** T5 · **Size:** M
+**Done when:** the car drives the whole lot, falling off respawns it, the offroad zone accumulates
+time, and the SUV fits a space with room to open an imaginary door.
 
-Port `parking_space.tscn` → `ParkingBay.tscn` and merge `ParkingSpace.cs` with
-`ParkingSpaceArea.cs` into one `ParkingBay.gd` — the source's own TODO says the sub-node is
-needless, and one script removes the event relay entirely. Keep: entry/exit tracking, the left/right
-line `Area3D`s, `has_npc_vehicle` from the overlapping bodies, and the settle check that ends the
+### T7 — Scored parking space
+**Depends on:** T6 · **Size:** M
+
+Port `parking_space.tscn` → `ScoredParkingSpace.tscn` and merge `ParkingSpace.cs` with
+`ParkingSpaceArea.cs` into one `ScoredParkingSpace.gd`. Keep: entry/exit tracking, the left/right
+line `Area3D`s, `has_parked_car` from the overlapping bodies, and the settle check that ends the
 round once the player's speed drops below the threshold.
 
-The bay measures — angle to the bay's axis, distance to its centre, which lines are crossed — and
-writes them to `RoundData`. It does **not** grade; that is T7. The four corner posts are unused in
-the source; either wire them into the measurement or drop them, but do not port them as decoration.
+The space measures — angle to its axis, distance to its centre, which lines are crossed — and
+writes them to `RoundData`. It does **not** grade, and it does not write the round's score the way
+`ParkingSpace.cs` does; that is T8 and T9. The four corner posts are unused in the source; either
+wire them into the measurement or drop them, but do not port them as decoration.
 
-**Done when:** driving into a bay starts scoring, leaving stops it, coming to rest ends the round,
-and the three measurements read sanely in the debug readout.
+**Done when:** driving into a space starts measuring, leaving stops it, coming to rest ends the
+round, and the three measurements read sanely in the debug readout.
 
-### T7 — Grade model
-**Depends on:** T6 · **Size:** S
+### T8 — Grade model
+**Depends on:** T7 · **Size:** S
 
-Port `LevelData.cs` → `RoundData.gd` (per-round tallies) and `LevelDefaults` → `ParkingRules.gd`
-(`const` block: 60 s default, 25 s floor, 5 s per level, +2 cars per level, 10 s event interval).
+Port `LevelData.cs` → `RoundData.gd` (per-round tallies plus the single `grade()`) and
+`LevelDefaults` → `ParkingRules.gd` (`const` block: 60 s default, 25 s floor, 5 s per level, +2
+cars per level, 10 s event interval).
 
-The rank maths exists twice in the source, in `LevelData.CalculateRank` and in
-`ParkingSpace.CalculateCurrentParkingScore`, and the two have already drifted — only the second
-counts line crossings into the live score. **One implementation**, in `RoundData`, called by both
-the live readout and the score card.
+**One implementation**, called by both the live readout and the score card — see
+[Shared code](#shared-code-not-copied-code).
 
 **Done when:** a table of (angle, distance, lines, collisions) → grade is covered by a test scene
 or a `_run` script, including the boundary values 0.5/0.9/1.5/2.0 m.
 
-### T8 — Round lifecycle
-**Depends on:** T7 · **Size:** L
+### T9 — Round lifecycle
+**Depends on:** T8 · **Size:** L
 
 Port `Level.cs` → `ParkingRound.gd`: the `ACTIVE → OVER → next/reset` state machine, the countdown,
-the five-second post-round hold, `end_round()`, `reset_round()` and `next_round()`, plus the level
-timer curve (default minus decrement per level, floored). Parked-outside-a-bay ends the round as a
-failure.
-
-`next_round` and `reset_round` are near-duplicates in the source, one of which builds `LevelData`
-twice; write one `_start_round(advance: bool)`.
+the five-second post-round hold, `end_round()`, and one `_start_round(advance: bool)` in place of
+the source's two near-identical methods, plus the level timer curve (default minus decrement per
+level, floored). Parked outside a space ends the round as a failure. The round owns the score; the
+space reports measurements to it.
 
 **Done when:** a full loop plays — drive, park, grade, hold, next round with less time and more
 cars — and a failed park re-runs the same level.
 
-### T9 — NPC cars
-**Depends on:** T8 · **Size:** M
+### T10 — Parked cars
+**Depends on:** T9, T4 · **Size:** M
 
-Port `Spawner.cs` → `TrafficSpawner.gd` and `NpcCar.cs` → `NpcCar.gd` (+ `simple_npc.tscn` →
-`NpcCar.tscn`), including the random paint via a duplicated `StandardMaterial3D`.
+Port `Spawner.cs` → `TrafficSpawner.gd` and `NpcCar.cs` → `ParkedCar.gd`, filling spaces from the
+same catalog the player drives, with the random paint applied to a duplicated
+`StandardMaterial3D` so one car's colour does not repaint the rest.
 
-Fill bays by shuffling the bay list and taking the first _n_ rather than the source's rejection
-sampling, which redraws until a `HashSet` fills and gets slower the fuller the lot is. Free with
+Parked cars are the drivable chassis with input off and `freeze = true` unless they need to be
+shunted; twenty live `VehicleBody3D`s is the single most likely thing to sink the web build.
+Fill spaces by shuffling the list and taking the first _n_ rather than the source's rejection
+sampling, which redraws until a set fills and gets slower the fuller the lot is. Free with
 `queue_free()`, never `Free()`.
 
-**Done when:** each round fills `level × 2` bays (clamped so at least one stays free), a reset
-clears them with no leaked nodes, and no two cars spawn into the same bay.
+**Done when:** each round fills `level × 2` spaces (clamped so at least one stays free), a reset
+clears them with no leaked nodes, no two cars spawn into the same space, and a full lot holds frame
+rate.
 
-### T10 — HUD and score card
-**Depends on:** T8 · **Size:** M
+### T11 — HUD and score card
+**Depends on:** T9 · **Size:** M
 
 Port `hud.tscn` + `Hud.cs` → `ParkingHUD.tscn`/`.gd`, `LevelScoreHudElement.cs` → `ScoreCard.gd`,
 and `debug_hud.tscn` → `DebugReadout.tscn` behind an `@export var show_debug` that is off by
 default.
 
 The HUD listens to `ParkingRound` signals; it must not resolve the round by absolute path every
-frame the way `Hud.cs` does. Clock formatting is explicit (`MM:SS`), not
+frame the way `Hud.cs` does. One clock formatter, shared with the score card, not
 `TimeSpan.ToString()`. Keep the score card's rollout animation.
 
 **Done when:** clock, live score and grade card all read correctly through a full round, and the
 debug readout is off in a default build.
 
-### T11 — Pause, and the way back to Parkade
-**Depends on:** T10 · **Size:** S
+### T12 — Pause, and the way back to Parkade
+**Depends on:** T11 · **Size:** S
 
 Port `Menu.cs`/`Menu.tscn` → `PauseMenu.gd`/`.tscn`, keeping the play/resume duality but dropping
 `Quit` in favour of **PARKADE MENU**, which calls `Parkade.return_to_menu()`.
@@ -265,8 +371,8 @@ and the menu button leaves.
 **Done when:** pausing stops the round and the clock, resuming continues it, and leaving returns to
 a working Parkade menu with the cursor visible.
 
-### T12 — Audio
-**Depends on:** T11 · **Size:** S
+### T13 — Audio
+**Depends on:** T12 · **Size:** S
 
 Engine note, collisions, a round-over sting through the existing `SfxPlayer`; `MusicPlayer` already
 runs across scene changes and needs nothing. New clips follow
@@ -274,34 +380,34 @@ runs across scene changes and needs nothing. New clips follow
 
 **Done when:** the game is audible and the Music/SFX buses behave as they do in Cone Justice.
 
-### T13 — Pedestrians and ragdolls *(optional, gated)*
-**Depends on:** T9 · **Size:** L
+### T14 — Pedestrians and ragdolls *(optional, gated)*
+**Depends on:** T10 · **Size:** L
 
 The highest-risk part of the source and the least load-bearing. `HumanNpc.tscn` is 100 KB of
 skeleton with a `PhysicalBoneSimulator3D`, `MobileNpc.cs` drives it with a `NavigationAgent3D`, and
 the whole thing exists to be knocked over by the player. It needs the baked navigation mesh from
-T5, the animation library, and it is the one part of the port whose physics behaviour on the GL
+T6, the animation library, and it is the one part of the port whose physics behaviour on the GL
 Compatibility web build is unknown.
 
 Ship it behind `@export var pedestrians_enabled := false` on `ParkingRound` so the cabinet can go
 live without it. `LookAt` on a zero-length or vertical direction errors — guard both.
 
-**Done when:** a pedestrian walks from a bay to the building entrance, ragdolls on contact with the
-player, is cleaned up on round reset, and the web build holds frame rate with several active.
+**Done when:** a pedestrian walks from a space to the building entrance, ragdolls on contact with
+the player, is cleaned up on round reset, and the web build holds frame rate with several active.
 
-### T14 — Web export and performance
-**Depends on:** T12 · **Size:** M
+### T15 — Web export and performance
+**Depends on:** T13 · **Size:** M
 
 Export the `Web` preset with the parking game included and play it in a browser. Watch the `.pck`
-size delta, the load time, and physics cost with a full lot of `VehicleBody3D` NPCs — twenty parked
-vehicle bodies is the thing most likely to fall over on a phone. Freeze parked NPC cars
-(`freeze = true` / `PhysicsBody3D` sleep) unless they need to be pushable.
+size delta, the load time, and physics cost with a full lot of frozen chassis. Reusing Cone
+Justice's meshes means the delta should be dominated by the lot and the building, not the cars —
+if it is not, something is importing the source's car pack by accident.
 
 **Done when:** the preset exports, both games play from one build in a browser, and the size and
 frame rate are recorded in this document.
 
-### T15 — Open the cabinet
-**Depends on:** T14 · **Size:** S
+### T16 — Open the cabinet
+**Depends on:** T15 · **Size:** S
 
 Flip `available` to `true` on the `parking_game` entry in `Scripts/Autoload/Parkade.gd`, check the
 tagline and control hints against what shipped, update the README, and add a
@@ -312,37 +418,40 @@ tagline and control hints against what shipped, update the README, and add a
 ### Order
 
 ```
-T1 ─ T2 ─ T3 ─ T4
-          │
-          └─ T5 ─ T6 ─ T7 ─ T8 ─┬─ T9 ──┬─ T13 (optional)
-                                └─ T10 ─┴─ T11 ─ T12 ─ T14 ─ T15
+T1 ─ T2 ─ T3 ─┬─ T4 ──────────────┐
+              ├─ T5               │
+              └─ T6 ─ T7 ─ T8 ─ T9 ┴─┬─ T10 ─┬─ T14 (optional)
+                                     └─ T11 ─┴─ T12 ─ T13 ─ T15 ─ T16
 ```
 
-T1–T5 is a drivable car in a lot and is worth doing in one go. T6–T8 is the actual game. Everything
-after T11 is shippable-quality work that can slip without blocking the cabinet from opening,
-except T14.
+T1–T6 is a real car driving around a real lot and is worth doing in one go. T7–T9 is the actual
+game. Everything after T12 is shippable-quality work that can slip without blocking the cabinet
+from opening, except T15.
 
 ## Known defects in the source
 
-Fix these on the way across rather than porting them faithfully and rediscovering them later.
+Fix these on the way across rather than porting them faithfully and rediscovering them later. The
+duplication ones are in [Shared code](#shared-code-not-copied-code) and are not repeated here.
 
 - **`Spawner` frees with `Free()`, not `queue_free()`.** Immediate frees during a physics callback
   are how you get a crash that only happens when a car is touching something.
-- **Rank maths is duplicated and has drifted** — `LevelData.CalculateRank` ignores line crossings
-  while `ParkingSpace.CalculateCurrentParkingScore` counts them (T7).
 - **`Hud.ShowMessage` starts its timer twice**, once with an explicit 3 s and once with the
   inspector value, so the message duration is whichever wins.
-- **`CameraControl` tilt clamp is a no-op** and mixes degrees with radians (T4).
+- **`CameraControl` tilt clamp is a no-op** and mixes degrees with radians (T5).
 - **`Game._Input` polls `Input.IsActionPressed("Pause")` inside an event handler**, so pause fires
   on any key held while Escape is down. Use `event.is_action_pressed`.
-- **`GenerateObstacles` rejection-samples** bay indices until a set fills (T9).
+- **`GenerateObstacles` rejection-samples** space indices until a set fills (T10).
 - **`KillPlane` invokes the player's delegate itself** — impossible in GDScript, and the wrong
   shape anyway (Translation rules).
+- **`ParkingSpace` writes `level.Score` every frame** from inside the space. The round owns the
+  score (T9).
 - **Absolute `/root/Main/Level/...` paths everywhere** — they cannot survive being a cabinet in
   Parkade (Translation rules).
 - **The parking angle is `|deg(angle) − 90|`**, which reads as a magic number: it falls out of
-  comparing the car's `-Z` against the bay's `+Z`. Compare against the bay's forward axis directly
-  and the 90 disappears.
+  comparing the car's `-Z` against the space's `+Z`. Compare against the space's forward axis
+  directly and the 90 disappears.
+- **`NpcCar._PhysicsProcess` is an empty override** around commented-out driving code, and the
+  class carries three steering fields it never uses (T10).
 
 ## Not being ported
 
@@ -350,8 +459,9 @@ Fix these on the way across rather than porting them faithfully and rediscoverin
 `SpectatorCamera.cs` (`StartSpin` computes a position and discards it; `GetNode<Node3D>("Player")`
 would not resolve), `NodePool.cs` (`Recall` always returns null and `Stow` is empty),
 `SkeletonUtils.cs` (entirely commented out), `NpcRagdoll.cs` (a test harness for
-`NpcRagdoll.tscn`), and `nissan_sentra.tscn`/`player.tscn` (unreferenced by the level, 5.7 MB and
-30 MB of assets behind them).
+`NpcRagdoll.tscn`), `simple_player.tscn`/`simple_npc.tscn` (placeholder box cars, replaced per
+[Vehicles](#vehicles)), and `nissan_sentra.tscn`/`player.tscn` (unreferenced by the level, 5.7 MB
+and 30 MB of assets behind them).
 
 If any of it turns out to be needed, it is one file in a repo that is not going anywhere.
 
@@ -363,3 +473,5 @@ If any of it turns out to be needed, it is one file in a repo that is not going 
 2. **Are the two fonts licensed for redistribution?** Blocking for T1 if the HUD is to use them.
 3. **How many rounds is a run?** The source escalates forever. An arcade cabinet probably wants an
    end, and Cone Justice already has a run-over screen worth matching.
+4. **Where does vehicle select live** — a screen before the round, a Parkade-level garage shared by
+   both cabinets, or unlockable by grade? T4 only guarantees the data is ready for whichever.

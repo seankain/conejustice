@@ -37,9 +37,14 @@ which is the same engine but written in C# — and a .NET build does not run on 
 a car around a lot against a countdown and park it between the lines; the round is graded A to F on
 your angle, how centred you are, whether you crossed a line and what you hit on the way in.
 
+It drives Cone Justice's cars: the source's placeholder is a box, and the SUV and minivan meshes
+are already in this repo, so both cabinets share one set of vehicles and a vehicle-select menu
+becomes a resource rather than a refactor.
+
 Nothing of it is in this repo yet. [docs/parking-game-port.md](docs/parking-game-port.md) is the
-plan: what the source contains, where each file lands, and the task breakdown to get there. Its
-menu entry already exists, greyed, and opening the cabinet is the last task in that plan.
+plan: what the source contains, where each file lands, which prototype defects get fixed rather
+than ported, and the task breakdown to get there. Its menu entry already exists, greyed, and
+opening the cabinet is the last task in that plan.
 
 ## The shell
 
