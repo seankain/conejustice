@@ -191,7 +191,7 @@ port, and the task that owns it is named:
 
 | Duplicated in the source | Becomes |
 | --- | --- |
-| Rank maths in both `LevelData.CalculateRank` and `ParkingSpace.CalculateCurrentParkingScore` — already drifted, only the second counts line crossings | one `RoundData.grade()` (T8) |
+| Rank maths in both `LevelData.CalculateRank` and `ParkingSpace.CalculateCurrentParkingScore` — already drifted: both count line crossings, but only the first adds collisions and clamps to F, so the number on screen while you park and the grade on the card at the end are different functions of the same park | one `RoundData.rank()` (T8) |
 | `Level.ResetLevel` and `Level.NextLevel`, near-identical, one building `LevelData` twice | one `_start_round(advance: bool)` (T9) |
 | `ParkingSpace` + `ParkingSpaceArea`, a two-node relay for one bay — the source's own TODO calls it needless | one `ScoredParkingSpace.gd` (T7) |
 | `MAX_STEER`/`SteeringSpeed`/`ENGINE_POWER` on both `Player` and `NpcCar`, where `NpcCar` never drives (its `_PhysicsProcess` is entirely commented out) | one chassis scene; parked cars are the same scene, frozen, with no input (T10) |
