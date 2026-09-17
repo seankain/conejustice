@@ -219,7 +219,7 @@ it would make of the car pack already under `ThirdParty/` — stays out entirely
 | --- | --- | --- | --- |
 | `Models/auzrea_parking_final/` (glTF + textures) | 256 KB | the lot itself | imported as `ThirdParty/Models/ParkingLot/` |
 | `Models/low_rise_wall_to_wall_office_building/` | 1.2 MB | the building the pedestrians walk to | imported as `ThirdParty/Models/OfficeBuilding/` |
-| `Models/Npcs/` (`.res` mesh + `WalkPhone.res` + texture) | 4.5 MB | the pedestrian (T15 only) | **not imported** — unlicensed, see below |
+| `Models/Npcs/` (`.res` mesh + `WalkPhone.res` + texture) | 4.5 MB | the pedestrian (T15 only) | **not imported** — Sketchfab Standard licence, see below |
 | `UI/Fonts/BasicHandwriting.ttf`, `ThreeDimRightwardsRound.ttf` | 71 KB | the HUD | **not imported** — unlicensed, see below |
 
 That is ~1.5 MB against a repo that already carries 116 MB under `ThirdParty/`, and ~6 MB if the
@@ -241,11 +241,17 @@ Nothing else in the source's asset set is licensed, so nothing else came across:
   redistribution, so the HUD (T12) uses the default theme font until provenance is established. If
   `BasicHandwriting.ttf` is the author's own hand, saying so in a `license.txt` beside it is all it
   takes to bring it across.
-- **`Models/Npcs/` has no licence file at all**, and the mesh name (`Sketchfab_Scene_lpMaleG…`)
-  points at a Sketchfab model whose terms are unrecorded. It is only needed by T15, which is
-  optional and gated off by default, so the import decision belongs to T15 rather than blocking
-  the lot. Its `.res` embeds an absolute `res://Models/Npcs/…png` texture path, which has to be
-  rewritten when it moves — a second reason not to move it speculatively.
+- **`Models/Npcs/` ships with no licence file**, though the terms are now known: the mesh is a
+  free Sketchfab download under the **Sketchfab Standard licence**, per the repo owner. That is
+  a different kind of grant from the CC-BY-4.0 the lot and the office building carry. It asks
+  for the author to be credited, and it is a licence to *use* the model — in a build, in a
+  render — rather than the licence to redistribute that CC-BY is. Committing the mesh to a
+  public repository is therefore the question to settle before it comes across, against the
+  licence text itself; a `license.txt` beside it recording the licence and the author, and a
+  credit in the README, are wanted either way. It is only needed by T15, which is optional and
+  gated off by default, so the decision still belongs to T15 rather than blocking the lot. Its
+  `.res` embeds an absolute `res://Models/Npcs/…png` texture path, which has to be rewritten
+  when it moves — a second reason not to move it speculatively.
 
 ## Task breakdown
 

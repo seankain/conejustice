@@ -218,8 +218,13 @@ the round or the audio has to be tested by running a scene.
 ## Not here yet
 
 - **Pedestrians.** The source's ragdolling NPC is the riskiest part of it and the least
-  load-bearing, and its mesh has no licence file. `ParkingRound.pedestrians_enabled` is the
-  gate, off by default.
+  load-bearing. `ParkingRound.pedestrians_enabled` is the gate, off by default. Its mesh is a
+  free Sketchfab download under the **Sketchfab Standard licence** — which is not one of the
+  Creative Commons grants the lot and the office building carry: it asks for the author to be
+  credited and does not, on its face, grant redistribution of the model file itself. Shipping
+  it inside a build is what it is for; committing the raw mesh to a public repository is the
+  part to check against the licence text before it comes across, and the licence and the
+  credit belong beside it in `ThirdParty/` when it does.
 - **An end to the run.** The source escalates forever, and so does this. An arcade cabinet
   probably wants a last level and a run-over screen.
 - **A remembered car.** The cabinet reloads from scratch each launch, so it always starts
