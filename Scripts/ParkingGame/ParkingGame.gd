@@ -101,5 +101,5 @@ func _enter_play() -> void:
 	add_child(_lot)
 	current_round = ParkingRound.new()
 	current_round.name = "Round"
-	current_round.configure(_lot, _chosen_vehicle, chase_camera_scene)
+	current_round.configure(_lot, _chosen_vehicle, chase_camera_scene, catalog)
 	add_child(current_round)

@@ -26,8 +26,10 @@ extends VehicleBody3D
 ## without the body, because a [VehicleBody3D] under a rotating parent is owned
 ## by the physics engine and fights it.
 
-## Cars the player drives join this. The lot's areas ask for it by group rather
-## than by type, so an [Area3D] never has to know about this class.
+## The car the player drives joins this. The lot's areas ask for it by group
+## rather than by type, and the type is not enough on its own: a parked car is
+## this same scene, so a bay that asked "is this a PlayerCar?" would measure the
+## traffic and end the round the moment a parked car settled into its bay.
 const GROUP := &"player_car"
 
 ## Where [method respawn] puts the car. One marker per lot.
@@ -85,6 +87,12 @@ signal hit_obstacle(kind: Obstacle.Kind)
 ## direction is a pull-away rather than a brake.
 @export var creep_speed: float = 0.4
 
+## Whether this is the car the player is driving. Off for the cars the traffic
+## spawner parks, which are this same scene with nobody in them: they keep the
+## physics and the mesh, and stay out of [constant GROUP], so nothing in the lot
+## mistakes one for the player.
+@export var driven_by_player: bool = true
+
 @export_group("Nodes")
 ## The whole visual car. Instanced on its own by the select screen.
 @export var visuals: Node3D
@@ -104,7 +112,8 @@ var _wheel_visuals: Array[Node3D] = []
 
 
 func _ready() -> void:
-	add_to_group(GROUP)
+	if driven_by_player:
+		add_to_group(GROUP)
 	# body_entered needs both of these; without them the car silently never
 	# reports a collision.
 	contact_monitor = true
@@ -235,6 +244,14 @@ func respawn() -> void:
 	steering = 0.0
 	engine_force = 0.0
 	respawned.emit()
+
+
+## What this car is to another car that hits it. Every car is a vehicle,
+## whoever is driving it; whether a hit is reported at all is decided by
+## membership of [constant Obstacle.GROUP], which the traffic spawner grants to
+## parked cars and nothing grants to the player's.
+func obstacle_kind() -> Obstacle.Kind:
+	return Obstacle.Kind.VEHICLE
 
 
 func _on_body_entered(body: Node) -> void:

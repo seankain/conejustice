@@ -63,7 +63,9 @@ var car: PlayerCar = null
 
 var _lot: Node3D = null
 var _vehicle: DrivableVehicle = null
+var _catalog: VehicleCatalog = null
 var _camera_scene: PackedScene = null
+var _traffic: TrafficSpawner = null
 var _camera: ChaseCamera = null
 var _space: ScoredParkingSpace = null
 var _hold_remaining: float = 0.0
@@ -75,11 +77,17 @@ var _placing: bool = false
 var _rng := RandomNumberGenerator.new()
 
 
-## Everything the round needs, before it enters the tree.
-func configure(lot: Node3D, vehicle: DrivableVehicle, camera_scene: PackedScene) -> void:
+## Everything the round needs, before it enters the tree. [param catalog] is
+## what the lot is filled from -- the same cars the player picks between.
+func configure(
+		lot: Node3D,
+		vehicle: DrivableVehicle,
+		camera_scene: PackedScene,
+		catalog: VehicleCatalog = null) -> void:
 	_lot = lot
 	_vehicle = vehicle
 	_camera_scene = camera_scene
+	_catalog = catalog
 
 
 func _ready() -> void:
@@ -90,6 +98,11 @@ func _ready() -> void:
 		return
 	_spawn_car()
 	_connect_bays()
+	_traffic = TrafficSpawner.new()
+	_traffic.name = "Traffic"
+	_traffic.catalog = _catalog
+	_traffic.rng = _rng
+	add_child(_traffic)
 	_start_round(false)
 
 
@@ -151,6 +164,10 @@ func _start_round(advance: bool) -> void:
 	for zone in _offroad_zones():
 		zone.reset()
 	_place_car()
+	# Filled after the car is placed, so a bay the player is sitting in is
+	# cleared of them first.
+	if _traffic != null:
+		_traffic.fill(_bays(), level * ParkingRules.VEHICLES_PER_LEVEL)
 	if _camera != null:
 		_camera.snap_to_default()
 	state = State.ACTIVE

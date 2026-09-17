@@ -24,11 +24,13 @@ func _ready() -> void:
 
 
 func _on_body_entered(body: Node3D) -> void:
+	# By group rather than by type: a parked car is the same scene as the
+	# player's, and one that has been shoved off the world is the round's to
+	# clean up, not this node's to teleport onto the player's marker.
+	if not body.is_in_group(PlayerCar.GROUP):
+		return
 	var car := body as PlayerCar
 	if car == null:
-		# Anything else that falls this far -- a cone, a knocked-over bollard --
-		# is not worth keeping. The round's own cleanup owns parked cars, so
-		# nothing is freed from here.
 		return
 	car.respawn()
 	caught.emit(car)

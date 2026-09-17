@@ -158,6 +158,10 @@ func clear() -> void:
 
 
 func _on_bay_entered(body: Node3D) -> void:
+	# By group, not by type: the lot's parked cars are the same scene as the
+	# player's, and a bay filled by the spawner must not start scoring it.
+	if not body.is_in_group(PlayerCar.GROUP):
+		return
 	var entering := body as PlayerCar
 	if entering == null:
 		return
@@ -177,7 +181,7 @@ func _on_bay_exited(body: Node3D) -> void:
 
 
 func _on_line_entered(body: Node3D, left: bool) -> void:
-	if body is not PlayerCar:
+	if not body.is_in_group(PlayerCar.GROUP):
 		return
 	if left:
 		over_left_line = true
@@ -186,7 +190,7 @@ func _on_line_entered(body: Node3D, left: bool) -> void:
 
 
 func _on_line_exited(body: Node3D, left: bool) -> void:
-	if body is not PlayerCar:
+	if not body.is_in_group(PlayerCar.GROUP):
 		return
 	if left:
 		over_left_line = false
