@@ -79,6 +79,11 @@ def _mix(*layers):
     return out
 
 
+def _level(samples, gain):
+    """Scales one layer before it goes into _mix, which just sums."""
+    return [s * gain for s in samples]
+
+
 def _apply(samples, envelope):
     return [s * e for s, e in zip(samples, envelope)]
 
@@ -178,6 +183,47 @@ def time_up():
     return _apply(_tone(n, 400, "saw", detune=-280), _env(n, 0.02, 0.7))
 
 
+def car_impact():
+    """A car hitting something: a dull thud with a bit of panel rattle on it."""
+    n = int(RATE * 0.35)
+    body = _apply(_tone(n, 90, "saw", detune=-30), _env(n, 0.004, 0.9))
+    rattle = _apply(_lowpass(_noise(n), 4200, 900), _env(n, 0.002, 1.8))
+    return _normalise(_mix(_level(body, 0.85), _level(rattle, 0.45)))
+
+
+def round_start():
+    """Three rising blips: the GO! at the top of a round."""
+    return _seq([(523, 0.09), (659, 0.09), (880, 0.2)], "square")
+
+
+def round_over():
+    """A short descending sting under the score card."""
+    return _seq([(784, 0.12), (587, 0.12), (392, 0.34)], "square")
+
+
+def engine_loop():
+    """One looping cycle of engine.
+
+    Built from a whole number of cycles of its own fundamental so the end
+    samples meet the start ones: a loop with a seam in it is a click, once per
+    period, forever. Pitched by EngineAudio rather than layered here, so the
+    tone has to hold up across roughly half to double speed.
+    """
+    fundamental = 60.0
+    cycles = 24
+    n = int(round(RATE * cycles / fundamental))
+    layers = []
+    for harmonic, level in ((1.0, 0.55), (2.0, 0.3), (3.0, 0.18), (4.5, 0.1)):
+        samples = [
+            math.sin(2.0 * math.pi * fundamental * harmonic * i / RATE)
+            for i in range(n)
+        ]
+        layers.append(_level(samples, level))
+    # A little broadband roughness, low-passed, so it is not a pure organ note.
+    layers.append(_level(_lowpass(_noise(n), 1800, 1200), 0.12))
+    return _normalise(_mix(*layers), peak=0.55)
+
+
 SOUNDS = {
     "throw_whoosh": throw_whoosh,
     "cone_car": cone_car,
@@ -190,6 +236,10 @@ SOUNDS = {
     "low_time_beep": low_time_beep,
     "section_clear": section_clear,
     "time_up": time_up,
+    "car_impact": car_impact,
+    "round_start": round_start,
+    "round_over": round_over,
+    "engine_loop": engine_loop,
 }
 
 if __name__ == "__main__":

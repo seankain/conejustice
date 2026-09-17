@@ -1,0 +1,39 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://Scripts/ParkingGame/ScoredParkingSpace.gd" id="1_space"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bay"]
+size = Vector3(6.08844, 3.12, 2.98465)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_line"]
+size = Vector3(6.53809, 4.43486, 0.153595)
+
+[node name="ScoredParkingSpace" type="Node3D" node_paths=PackedStringArray("bay", "left_line", "right_line", "npc_spawn_point")]
+script = ExtResource("1_space")
+bay = NodePath("Bay")
+left_line = NodePath("LeftLine")
+right_line = NodePath("RightLine")
+npc_spawn_point = NodePath("NpcSpawnPoint")
+
+[node name="Bay" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Bay"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.390472, 1.06, -0.00361633)
+shape = SubResource("BoxShape3D_bay")
+
+[node name="LeftLine" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.59547)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="LeftLine"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.338379, 1.10422, -0.00912929)
+shape = SubResource("BoxShape3D_line")
+
+[node name="RightLine" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.61112)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RightLine"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.338379, 0.613213, -0.0161853)
+shape = SubResource("BoxShape3D_line")
+
+[node name="NpcSpawnPoint" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.2902265, 0, 0)

@@ -25,9 +25,20 @@ Drop real files in with the same names and nothing in the game changes:
 | `low_time_beep.wav` | `BEEP` | once a second under the low-time threshold |
 | `section_clear.wav` | `CLEAR` | a section is cleared |
 | `time_up.wav` | `TIMEOUT` | the clock runs out |
+| `car_impact.wav` | `CAR_IMPACT` | the parking game's car hits something worth grading |
+| `round_start.wav` | `ROUND_START` | a parking round begins |
+| `round_over.wav` | `ROUND_OVER` | a parking round is graded |
+| `engine_loop.wav` | — | the parking game's engine note, played by `EngineAudio` on the car rather than as a cue |
 
 `SfxPlayer` loads these at runtime rather than preloading them, so a missing file
 warns and goes silent instead of breaking the autoload.
+
+`engine_loop.wav` is the one that is not a one-shot. It is built from a whole number of
+cycles of its own fundamental so that its end samples meet its start ones -- a loop with
+a seam in it is a click, once per period, for as long as the engine is running -- and it
+is imported with `edit/loop_mode=2`, which is the WAV importer's Forward (its enum is Detect, Disabled, Forward, Ping-Pong, Backward, so 1 means Disabled and is a trap). A replacement has to keep both properties.
+`EngineAudio` pitches it between roughly 0.75x and 2.1x, so whatever is in this file has
+to hold up across that range.
 
 If you replace these with anything sourced from elsewhere, move it to `ThirdParty/`
 and record the licence there with the other third-party credits.

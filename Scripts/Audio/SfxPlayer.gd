@@ -21,6 +21,12 @@ enum Cue {
 	BEEP,
 	CLEAR,
 	TIMEOUT,
+	## The parking game's, played by [ParkingRound] rather than off [EventBus] --
+	## that bus is Cone Justice's, and the parking game has no autoload of its
+	## own to add signals to.
+	CAR_IMPACT,
+	ROUND_START,
+	ROUND_OVER,
 }
 
 const SOUND_DIR := "res://Assets/Audio/"
@@ -36,6 +42,9 @@ const CUE_FILES := {
 	Cue.BEEP: "low_time_beep.wav",
 	Cue.CLEAR: "section_clear.wav",
 	Cue.TIMEOUT: "time_up.wav",
+	Cue.CAR_IMPACT: "car_impact.wav",
+	Cue.ROUND_START: "round_start.wav",
+	Cue.ROUND_OVER: "round_over.wav",
 }
 
 const BUS_SFX := &"SFX"

@@ -157,6 +157,23 @@ Settle these once; every task below assumes them.
 | `(int)(a / b)` on ints | `a / b` is already integer division; use `/` on ints, `floori()` otherwise |
 | `LINQ .Where().Cast().ToList()` | `filter()`/`map()` on `Array`, or a plain loop |
 
+Two engine facts the port ran into, both measured rather than assumed, and both
+cheaper to know before a scene is authored than after:
+
+- **Godot's `VehicleBody3D` drives towards +Z, not -Z.** Its wheels take their axle from local
+  `-X`, so the forward they push along is `up.cross(axle)` = `+Z` — the opposite of the `-Z` that
+  `look_at`, `ParkingSpace` and every car scene in this repo call forward. A chassis given `+2600`
+  of engine force travels `+Z`. The port keeps `-Z` forward and applies the sign where input meets
+  the engine (`PlayerCar.DRIVE_SIGN`, `STEER_SIGN`) rather than building one car backwards. The
+  source sidesteps this by putting its steering wheels at `+Z`, which is why its box drives at all.
+- **`engine_force` is applied at every wheel marked `use_as_traction`**, so a four-wheel-drive
+  chassis multiplies it by four, and Godot's vehicle has no drag worth the name: without a power
+  curve the car accelerates in a straight line until the lot runs out.
+- **A hand-written `.tscn` needs `node_paths=PackedStringArray("field")` on the node header** for
+  an `@export var field: Node3D` to resolve. Without it the `field = NodePath("Visuals")` line is
+  silently dropped and the reference is null at runtime. Scenes saved from the editor get this for
+  free; scenes written by hand — which is most of this port — do not.
+
 Two structural rules that are not mechanical:
 
 - **Absolute node paths die.** The source reaches across the tree with strings like
@@ -174,7 +191,7 @@ port, and the task that owns it is named:
 
 | Duplicated in the source | Becomes |
 | --- | --- |
-| Rank maths in both `LevelData.CalculateRank` and `ParkingSpace.CalculateCurrentParkingScore` — already drifted, only the second counts line crossings | one `RoundData.grade()` (T8) |
+| Rank maths in both `LevelData.CalculateRank` and `ParkingSpace.CalculateCurrentParkingScore` — already drifted: both count line crossings, but only the first adds collisions and clamps to F, so the number on screen while you park and the grade on the card at the end are different functions of the same park | one `RoundData.rank()` (T8) |
 | `Level.ResetLevel` and `Level.NextLevel`, near-identical, one building `LevelData` twice | one `_start_round(advance: bool)` (T9) |
 | `ParkingSpace` + `ParkingSpaceArea`, a two-node relay for one bay — the source's own TODO calls it needless | one `ScoredParkingSpace.gd` (T7) |
 | `MAX_STEER`/`SteeringSpeed`/`ENGINE_POWER` on both `Player` and `NpcCar`, where `NpcCar` never drives (its `_PhysicsProcess` is entirely commented out) | one chassis scene; parked cars are the same scene, frozen, with no input (T10) |
@@ -192,21 +209,37 @@ Only what `level.tscn` actually reaches is worth importing, and the cars now com
 rather than from the source, so the source's 30 MB `generic-passenger-car-pack` — and the duplicate
 it would make of the car pack already under `ThirdParty/` — stays out entirely.
 
-| Asset | Size | Needed for |
-| --- | --- | --- |
-| `Models/auzrea_parking_final/` (glTF + textures) | 256 KB | the lot itself |
-| `Models/low_rise_wall_to_wall_office_building/` | 1.2 MB | the building the pedestrians walk to |
-| `Models/Npcs/` (`.res` mesh + `WalkPhone.res` + texture) | 4.5 MB | the pedestrian (T14 only) |
-| `UI/Fonts/BasicHandwriting.ttf`, `ThreeDimRightwardsRound.ttf` | 71 KB | the HUD |
+| Asset | Size | Needed for | Status |
+| --- | --- | --- | --- |
+| `Models/auzrea_parking_final/` (glTF + textures) | 256 KB | the lot itself | imported as `ThirdParty/Models/ParkingLot/` |
+| `Models/low_rise_wall_to_wall_office_building/` | 1.2 MB | the building the pedestrians walk to | imported as `ThirdParty/Models/OfficeBuilding/` |
+| `Models/Npcs/` (`.res` mesh + `WalkPhone.res` + texture) | 4.5 MB | the pedestrian (T15 only) | **not imported** — unlicensed, see below |
+| `UI/Fonts/BasicHandwriting.ttf`, `ThreeDimRightwardsRound.ttf` | 71 KB | the HUD | **not imported** — unlicensed, see below |
 
-That is ~6 MB against a repo that already carries 116 MB under `ThirdParty/`, and ~1.5 MB of it if
-T14 is deferred.
+That is ~1.5 MB against a repo that already carries 116 MB under `ThirdParty/`, and ~6 MB if the
+pedestrian assets are ever cleared to come across.
 
-Licensing: the two Sketchfab models carry `license.txt` (attribution required) — both files come
-across into `ThirdParty/` next to the model and both get a line in the README's Credits section,
-the same treatment the existing third-party models get. **The fonts ship with no licence file**;
-their licences have to be established before they go into a published build, or the HUD uses the
-default theme font instead.
+### Licensing, as found
+
+The two Sketchfab models carry `license.txt`: both are **CC-BY-4.0**, attribution required and
+commercial use allowed. Each licence file sits beside its model in `ThirdParty/` and the credit
+line the licence asks for is reproduced verbatim in the README's Credits section.
+
+Nothing else in the source's asset set is licensed, so nothing else came across:
+
+- **The fonts ship with no licence file, and their embedded metadata rules one of them out.**
+  `ThreeDimRightwardsRound.ttf` carries `Copyright © 2002, m. klein. All rights reserved.` — a
+  third-party font with no grant to redistribute. `BasicHandwriting.ttf` is family `MyNewFont2`,
+  `Created with the help of MyScriptFont.com / Copyright belongs to the Creator`, which records no
+  grant either, though it may well be first-party handwriting. Publishing either to GitHub Pages is
+  redistribution, so the HUD (T12) uses the default theme font until provenance is established. If
+  `BasicHandwriting.ttf` is the author's own hand, saying so in a `license.txt` beside it is all it
+  takes to bring it across.
+- **`Models/Npcs/` has no licence file at all**, and the mesh name (`Sketchfab_Scene_lpMaleG…`)
+  points at a Sketchfab model whose terms are unrecorded. It is only needed by T15, which is
+  optional and gated off by default, so the import decision belongs to T15 rather than blocking
+  the lot. Its `.res` embeds an absolute `res://Models/Npcs/…png` texture path, which has to be
+  rewritten when it moves — a second reason not to move it speculatively.
 
 ## Task breakdown
 
@@ -454,6 +487,30 @@ frame rate reads as a broken game.
 
 **Done when:** the preset exports, both games play from one build in a browser, and the size and
 frame rate are recorded in this document.
+
+**Measured** on Godot 4.7.2, GL Compatibility, `variant/thread_support=false`:
+
+| | Before the port (`main` at `b6c9776`) | With the parking game |
+| --- | --- | --- |
+| `index.pck` | 86,931,008 B (82.9 MiB) | 88,043,512 B (84.0 MiB) |
+| `index.wasm` | 38 MB | 38 MB — the engine, unchanged |
+
+**The delta is 1,112,504 B, or 1.06 MiB**: the lot and the office building, and nothing else.
+That is the number this task was watching for. Reusing this repo's car meshes means the cars
+cost nothing, and a delta anywhere near 30 MB would have meant the source's car pack had been
+imported by accident.
+
+On the total rather than the delta: the pack is dominated by Cone Justice's 76 MB
+`ThirdParty/Skybox/portland_landing_pad_4k.exr`. Nothing in this port touches it, and it is
+where any serious size work starts.
+
+Played in Chromium (Playwright, software rasteriser) against a local server: the menu comes up,
+the parking game launches into vehicle select, confirming a car builds the lot and starts a round
+with the HUD running, and the console reports no errors.
+
+**No useful frame rate came out of that and none is recorded here.** That run had no GPU, so its
+numbers measure a software rasteriser rather than the game. The select screen and a full lot still
+want a look on real hardware, which is the part of this task a container cannot do.
 
 ### T17 — Open the cabinet
 **Depends on:** T16 · **Size:** S

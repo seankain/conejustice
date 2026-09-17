@@ -1,0 +1,71 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://Scripts/ParkingGame/ParkingHUD.gd" id="1_hud"]
+[ext_resource type="PackedScene" path="res://Scenes/ParkingGame/UI/ScoreCard.tscn" id="2_card"]
+[ext_resource type="PackedScene" path="res://Scenes/ParkingGame/UI/DebugReadout.tscn" id="3_debug"]
+
+[node name="ParkingHUD" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="Root" type="Control" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TopBar" type="HBoxContainer" parent="Root"]
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 18.0
+offset_right = -28.0
+offset_bottom = 68.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="LevelLabel" type="Label" parent="Root/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "LEVEL 1"
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 26
+
+[node name="ClockLabel" type="Label" parent="Root/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "1:00"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 34
+
+[node name="GradeLabel" type="Label" parent="Root/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "--"
+horizontal_alignment = 2
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 34
+
+[node name="CenterMessage" type="Label" parent="Root"]
+anchor_left = 0.5
+anchor_top = 0.35
+anchor_right = 0.5
+anchor_bottom = 0.35
+offset_left = -320.0
+offset_top = -30.0
+offset_right = 320.0
+offset_bottom = 30.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 52
+
+[node name="ScoreCard" parent="Root" instance=ExtResource("2_card")]
+layout_mode = 1
+
+[node name="DebugReadout" parent="Root" instance=ExtResource("3_debug")]
+layout_mode = 1
