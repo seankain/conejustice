@@ -12,6 +12,14 @@ extends CanvasLayer
 @onready var _stats: Label = $RunOver/Box/Stats
 @onready var _start_button: Button = $Title/Box/StartButton
 @onready var _retry_button: Button = $RunOver/Box/RetryButton
+## Both leave for the Parkade menu. That is a shell action, not a gameplay one,
+## so it goes straight to the shell rather than through EventBus: the bus is for
+## systems inside this game talking to each other, and nothing in Cone Justice
+## has any business reacting to the player walking away from the cabinet.
+@onready var _menu_buttons: Array[Button] = [
+	$Title/Box/MenuButton,
+	$RunOver/Box/MenuButton,
+]
 
 @export var won_heading: String = "JUSTICE SERVED"
 @export var lost_heading: String = "TIME UP"
@@ -22,6 +30,8 @@ extends CanvasLayer
 func _ready() -> void:
 	_start_button.pressed.connect(_request_run)
 	_retry_button.pressed.connect(_request_run)
+	for button in _menu_buttons:
+		button.pressed.connect(Parkade.return_to_menu)
 	EventBus.run_started.connect(_on_run_started)
 	EventBus.run_over.connect(_on_run_over)
 	_title.visible = true

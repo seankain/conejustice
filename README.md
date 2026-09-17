@@ -1,4 +1,15 @@
-# Cone Justice
+# Parkade
+
+**Parkade** (Park + Arcade) is a small arcade of browser games about parking badly and the
+consequences of it. The main menu lists the cabinets; picking one loads it, and **Escape** brings
+you back out to the menu from anywhere.
+
+| Cabinet | State |
+| --- | --- |
+| **Cone Justice** — throw traffic cones at cars parked where they shouldn't be | playable |
+| **Parking Game** — beat the clock, find a space, park it straight | being ported, see [docs/parking-game-port.md](docs/parking-game-port.md) |
+
+## Cone Justice
 
 Some people park like the rules are for other people. You have a truck full of traffic cones.
 
@@ -11,13 +22,46 @@ miss and you'll watch your cone clatter off into the gutter.
 Not every car deserves it. Most of the street is parked perfectly legally, and coning an innocent
 car costs you points. Look at the painted bay before you throw.
 
-## Gameplay
+### Gameplay
 
 - Aim and throw traffic cones from a first-person view.
 - Pick your targets: cone the badly parked, leave the law-abiding alone.
 - The street is dealt fresh every run, so which cars are in the wrong changes each time.
 - Ragdoll-ish, fully simulated cone physics — no two throws land the same way.
 - Short, arcade-style levels set in a low-poly neighborhood street.
+
+## Parking Game
+
+A GDScript port of [ParkingThings](https://github.com/seankain/parkingthings/tree/main/ParkingThings),
+which is the same engine but written in C# — and a .NET build does not run on the web at all. Drive
+a car around a lot against a countdown and park it between the lines; the round is graded A to F on
+your angle, how centred you are, whether you crossed a line and what you hit on the way in.
+
+It drives Cone Justice's cars: the source's placeholder is a box, and the SUV and minivan meshes
+are already in this repo, so both cabinets share one set of vehicles. Picking the cabinet lands you
+on vehicle select first — a carousel of cars turning on plates, in the San Francisco Rush shape —
+and confirming one starts the round in it. Adding a car to the carousel is a resource, not code.
+
+Nothing of it is in this repo yet. [docs/parking-game-port.md](docs/parking-game-port.md) is the
+plan: what the source contains, where each file lands, which prototype defects get fixed rather
+than ported, and the task breakdown to get there. Its menu entry already exists, greyed, and
+opening the cabinet is the last task in that plan.
+
+## The shell
+
+`Scenes/Parkade/MainMenu.tscn` is the project's main scene. It builds its list of cabinets from
+`Parkade.games` in `Scripts/Autoload/Parkade.gd`, so adding a game is one `ArcadeGame` entry there
+and no change to the menu scene; a game whose `available` is false is listed greyed rather than
+hidden.
+
+`Parkade` is an autoload and owns every scene change: it unpauses the tree and restores the mouse
+cursor on the way through, so nothing a game did to either can leak into the next one. It also
+handles **Escape** as *unhandled* input, which means a game that wants Escape for its own pause
+menu simply consumes it first.
+
+The `GameState` and `EventBus` autoloads are Cone Justice's alone — a second game gets its own
+state rather than widening those. `SfxPlayer` and `MusicPlayer` are shared, and the music keeps
+playing across cabinets.
 
 ## Tech
 
@@ -30,17 +74,22 @@ car costs you points. Look at the painted bay before you throw.
 ## Project layout
 
 ```
-Scenes/       Game scenes — Main (game root), level, Cone, SUV, Tree1, UI/
-Scripts/      GDScript — Autoload/, Audio/, Camera/, Gameplay/, UI/
-Assets/       First-party assets (vehicle profiles, generated placeholder audio)
-ThirdParty/   Third-party models and textures (cars, building, trees, skybox)
-Tools/        Asset generation scripts
-docs/         Design and implementation notes
-project.godot Godot project configuration
+Scenes/Parkade/  The arcade menu — MainMenu, the project's main scene
+Scenes/          Cone Justice scenes — Main (its root), level, Cone, SUV, Tree1, UI/
+Scripts/         GDScript — Autoload/, Parkade/, Audio/, Camera/, Gameplay/, UI/
+Assets/          First-party assets (vehicle profiles, generated placeholder audio)
+ThirdParty/      Third-party models and textures (cars, building, trees, skybox)
+Tools/           Asset generation scripts
+docs/            Design and implementation notes
+project.godot    Godot project configuration
 export_presets.cfg  Web export preset
 ```
 
-`Scenes/Main.tscn` is the main scene: it composes the level, the camera rig, the
+Cone Justice's scenes and scripts sit at the top of `Scenes/` and `Scripts/` rather than under a
+folder of their own; it was here first, and moving it would touch every scene in the repo for no
+gain. The parking game goes in `Scenes/ParkingGame/` and `Scripts/ParkingGame/`.
+
+`Scenes/Main.tscn` is Cone Justice's root: it composes the level, the camera rig, the
 gameplay nodes and the HUD. `Scenes/level.tscn` is scenery, the camera rail and the
 parking bays; the cars are spawned into those bays when a run starts. See
 [docs/parking-bays.md](docs/parking-bays.md) for how a car ends up innocent or guilty, and
@@ -52,7 +101,8 @@ bays are filled from.
 1. Install [Godot 4.7](https://godotengine.org/download) or newer.
 2. Clone this repo and open the folder with the Godot project manager (`Import` → select
    `project.godot`).
-3. Press **F5** to run the main scene.
+3. Press **F5** to run the main scene — the Parkade menu. **F6** runs whichever scene is open, so
+   `Scenes/Main.tscn` still launches straight into Cone Justice while you work on it.
 
 ## Web export
 
@@ -117,8 +167,9 @@ which are published in `releases/godot-<version>.json` in
 
 ## Status
 
-Early prototype. The scenes, models, and web export pipeline are in place, and the core loop —
-throwing, scoring, target validation and the randomised street — plays end to end.
+Early prototype. Cone Justice's scenes, models, and web export pipeline are in place, and its core
+loop — throwing, scoring, target validation and the randomised street — plays end to end. The
+Parkade shell is in and lists both cabinets; the parking game itself has not been started.
 
 ## Credits
 
