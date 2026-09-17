@@ -167,24 +167,45 @@ func _freeze(car: PlayerCar) -> void:
 	car.set_physics_process(false)
 
 
-## Paints the body, and only the body. The material is duplicated first: the
-## meshes share one resource, so tinting it in place would repaint every car in
-## the lot, the player's included.
+## Paints the bodywork, and only the bodywork.
+##
+## The material is duplicated first: the meshes share one resource, so tinting
+## it in place would repaint every car in the lot, the player's included.
+##
+## Which surface is the bodywork is asked of the mesh rather than assumed. The
+## SUV is one surface for the whole car; the minivan splits into Body, Optics
+## and Glass, and painting all three gives it headlights and windows in the
+## body colour -- a lot full of cars with hot pink glass.
 func _paint(car: PlayerCar) -> void:
 	if car.visuals == null:
 		return
 	var body := car.visuals.get_node_or_null(^"Body") as MeshInstance3D
 	if body == null or body.mesh == null:
 		return
-	var colour := Color.from_hsv(rng.randf(), rng.randf_range(0.15, 0.6), rng.randf_range(0.35, 0.9))
-	for surface in body.mesh.get_surface_count():
-		var source_material := body.get_active_material(surface)
-		var material := (source_material.duplicate() if source_material != null
-				else StandardMaterial3D.new()) as BaseMaterial3D
-		if material == null:
-			continue
-		material.albedo_color = colour
-		body.set_surface_override_material(surface, material)
+	var surface := _bodywork_surface(body.mesh)
+	if surface < 0:
+		return
+	var source_material := body.mesh.surface_get_material(surface)
+	var material := (source_material.duplicate() if source_material != null
+			else StandardMaterial3D.new()) as BaseMaterial3D
+	if material == null:
+		return
+	material.albedo_color = Color.from_hsv(
+			rng.randf(), rng.randf_range(0.15, 0.6), rng.randf_range(0.35, 0.9))
+	body.set_surface_override_material(surface, material)
+
+
+## The surface holding the paintwork: the one whose material says it is the
+## body, or the first if none of them says anything. A single-surface car is
+## its own bodywork.
+func _bodywork_surface(mesh: Mesh) -> int:
+	if mesh.get_surface_count() == 0:
+		return -1
+	for surface in mesh.get_surface_count():
+		var material := mesh.surface_get_material(surface)
+		if material != null and material.resource_name.to_lower().contains("body"):
+			return surface
+	return 0
 
 
 ## Fisher-Yates, on the generator this system was seeded with, rather than
