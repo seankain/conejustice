@@ -34,6 +34,10 @@ const MAX_SAFE_TILT_DEGREES := 25.0
 ## and the suspension is bottomed out, which reads as the car being sunk into
 ## the road and drives like it too.
 const MAX_REST_SAG := 0.12
+## Metres a car at full lock must have moved towards the side it is steering,
+## measured over the first stretch of the turn. Loose on purpose: this asks
+## which way the car went, not how tight its circle is.
+const MIN_TURN_OFFSET := 0.5
 
 var _car: PlayerCar
 var _failures: Array[String] = []
@@ -161,16 +165,33 @@ func _measure_braking() -> void:
 func _measure_turn() -> void:
 	Input.action_press(&"drive_forward")
 	await _wait(4.0)
+	var from := _car.global_position
+	# The driver's right, in the frame the car starts the turn in: forward
+	# crossed with up. Which way the car actually went is the one thing about
+	# the steering that cannot be reasoned out from the sign of a constant --
+	# the engine drives this chassis backwards and steers it around the wheels
+	# at its nose, and those two cancel. It was shipped turning the wrong way
+	# because that was worked out on paper rather than measured.
+	var forward := -_car.global_basis.z
+	var right := Vector3(-forward.z, 0.0, forward.x).normalized()
 	Input.action_press(&"steer_left")
 	var worst := 0.0
 	var elapsed := 0.0
+	var lateral := 0.0
 	while elapsed < 8.0:
 		await physics_frame
 		elapsed += STEP
 		worst = maxf(worst, _tilt_degrees())
-	print("hard turn:    %.2f m/s, worst lean %.1f deg" % [_car.speed(), worst])
+		# Sampled early, before a car at full lock has come far enough round to
+		# be heading back the way it came.
+		if elapsed < 1.2:
+			lateral = (_car.global_position - from).dot(right)
+	print("hard turn:    %.2f m/s, worst lean %.1f deg, went %.2f m to the %s" % [
+		_car.speed(), worst, absf(lateral), "right" if lateral > 0.0 else "left"])
 	if worst > MAX_SAFE_TILT_DEGREES:
 		_failures.append("leaned %.1f degrees in a turn" % worst)
+	if lateral > -MIN_TURN_OFFSET:
+		_failures.append("steering left went %.2f m to the driver's right" % lateral)
 	Input.action_release(&"steer_left")
 	Input.action_release(&"drive_forward")
 

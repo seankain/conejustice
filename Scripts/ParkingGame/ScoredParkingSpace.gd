@@ -37,7 +37,10 @@ signal player_exited(car: PlayerCar)
 ## Fresh measurements, while the player is inside. The round writes these into
 ## its [RoundData]; nothing is graded here.
 signal measured(angle: float, centre_distance: float, over_left: bool, over_right: bool)
-## The player stopped inside the bay. This is what ends a round.
+## The player stopped inside the bay. This is what ends a round -- and it is
+## emitted again if the car moves off and comes to rest here a second time,
+## because a bay that reported a stop nobody was listening for is a bay the
+## round can never end in.
 signal player_settled(car: PlayerCar)
 
 @export_group("Nodes")
@@ -67,9 +70,13 @@ var car: PlayerCar = null
 ## Whether the car is currently over each painted line.
 var over_left_line: bool = false
 var over_right_line: bool = false
+## Whether the car in this bay has come to rest in it. A state rather than a
+## signal the bay fires once and forgets: a car sitting astride a line comes to
+## rest in two bays at once, only one of which is being scored, and the other
+## one has to still know it is parked in if the round turns to it.
+var settled: bool = false
 
 var _settled_for: float = 0.0
-var _settle_reported: bool = false
 
 
 func _ready() -> void:
@@ -96,10 +103,11 @@ func _process(delta: float) -> void:
 	# [method PlayerCar.ground_speed].
 	if car.ground_speed() > settle_speed:
 		_settled_for = 0.0
+		settled = false
 		return
 	_settled_for += delta
-	if _settled_for >= settle_time and not _settle_reported:
-		_settle_reported = true
+	if _settled_for >= settle_time and not settled:
+		settled = true
 		player_settled.emit(car)
 
 
@@ -152,8 +160,8 @@ func clear() -> void:
 	car = null
 	over_left_line = false
 	over_right_line = false
+	settled = false
 	_settled_for = 0.0
-	_settle_reported = false
 	set_process(false)
 
 
@@ -166,8 +174,8 @@ func _on_bay_entered(body: Node3D) -> void:
 	if entering == null:
 		return
 	car = entering
+	settled = false
 	_settled_for = 0.0
-	_settle_reported = false
 	set_process(true)
 	player_entered.emit(entering)
 

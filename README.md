@@ -47,8 +47,11 @@ where to tune it. [docs/parking-game-port.md](docs/parking-game-port.md) is the 
 followed — what the source contained, which of its defects were fixed on the way across rather
 than carried, and what is still outstanding.
 
-Pedestrians are not in it. They are the riskiest part of the source and the least load-bearing,
-their mesh carries no licence file, and `ParkingRound.pedestrians_enabled` gates them off.
+Pedestrians are not in it. They are the riskiest part of the source and the least load-bearing, and
+`ParkingRound.pedestrians_enabled` gates them off. Their mesh is a free Sketchfab download under the
+Sketchfab Standard licence rather than one of the Creative Commons grants the other models carry, so
+bringing it across means crediting the author and checking that licence about committing the mesh
+itself to a public repository — see [docs/parking-game-port.md](docs/parking-game-port.md).
 
 ## The shell
 

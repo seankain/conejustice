@@ -67,7 +67,11 @@ var _catalog: VehicleCatalog = null
 var _camera_scene: PackedScene = null
 var _traffic: TrafficSpawner = null
 var _camera: ChaseCamera = null
+## The bay being scored, or null when the car is in none.
 var _space: ScoredParkingSpace = null
+## Every bay the car is inside. More than one whenever it is sitting on a line,
+## and a car swinging into a bay is briefly inside three.
+var _occupied: Array[ScoredParkingSpace] = []
 var _hold_remaining: float = 0.0
 ## True while [method _start_round] is putting the car back, so the respawn it
 ## does to place the car is not mistaken for the player asking for one.
@@ -109,6 +113,11 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	match state:
 		State.ACTIVE:
+			_update_scored_bay()
+			if state != State.ACTIVE:
+				# The car was already at rest in the bay that just became the
+				# one being scored, so that was the round.
+				return
 			seconds_remaining = maxf(seconds_remaining - delta, 0.0)
 			time_changed.emit(seconds_remaining)
 			if is_zero_approx(seconds_remaining):
@@ -163,6 +172,7 @@ func _start_round(advance: bool) -> void:
 	data = RoundData.new()
 	seconds_remaining = seconds_for_level(level)
 	_space = null
+	_occupied.clear()
 	for bay in _bays():
 		bay.clear()
 	for zone in _offroad_zones():
@@ -249,14 +259,43 @@ func _offroad_seconds() -> float:
 
 
 func _on_bay_entered(_entering: PlayerCar, bay: ScoredParkingSpace) -> void:
-	# A car can straddle two bays. The one it entered most recently is the one
-	# being scored, which is also the one it is most likely trying to park in.
-	_space = bay
+	if not _occupied.has(bay):
+		_occupied.append(bay)
+	_update_scored_bay()
 
 
 func _on_bay_exited(_leaving: PlayerCar, bay: ScoredParkingSpace) -> void:
-	if _space == bay:
-		_space = null
+	_occupied.erase(bay)
+	_update_scored_bay()
+
+
+## Picks the bay to score: of the bays the car is inside, the one its middle is
+## nearest.
+##
+## [b]Not the one it entered most recently[/b], which is what this used to do
+## and is what made a good park go unnoticed. A car swings into a bay nose
+## first and sweeps its tail through the bay next door, so the last bay entered
+## is as likely to be the neighbour it brushed as the one it is parking in --
+## and when it straightened up and left that neighbour again, the round was
+## left scoring no bay at all. The car was then sitting squarely between the
+## lines with nothing watching it, which is why parking properly did nothing
+## and parking on the line, where the car never leaves the bay it entered last,
+## worked.
+func _update_scored_bay() -> void:
+	var nearest: ScoredParkingSpace = null
+	var nearest_distance := INF
+	if car != null:
+		for bay in _occupied:
+			var distance := bay.centre_distance(car)
+			if distance < nearest_distance:
+				nearest_distance = distance
+				nearest = bay
+	_space = nearest
+	# A bay can come to rest before it is the one being scored -- a car stopped
+	# on a line settles in both at once -- so the bay is asked, rather than
+	# waited on to say it again.
+	if _space != null and _space.settled and state == State.ACTIVE:
+		end_round()
 
 
 func _on_bay_measured(

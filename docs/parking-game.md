@@ -46,6 +46,38 @@ chassis reports over a metre per second of vertical velocity for a second or two
 springs settle. Sustained, not instantaneous, because a car passing through zero in the
 middle of a three-point turn has not parked.
 
+Settling is a state the bay holds, not an announcement it makes once. A car stopped astride
+a line comes to rest in two bays at once and only one of them is being scored; a bay that
+had said its piece and gone quiet would be a bay the round could never end in.
+
+### Which bay is being scored
+
+A car is in more than one bay more often than it looks: it swings in nose first and sweeps
+its tail through the bay next door, and a car sitting on a line is in both. Of the bays the
+car is inside, **the one being scored is the one whose middle it is nearest** — not the one
+it entered most recently, which was the first rule and which is what made parking properly
+do nothing. The last bay entered was as often as not the neighbour the tail had brushed, and
+straightening up left that neighbour again and cleared the round's idea of where the car was.
+Stopping on the line worked, because a car that stops on the line never leaves the bay it
+entered last.
+
+### Where the bays are
+
+The bay volumes are not eyeballed onto the model. Every `ScoredParkingSpace` in `Lot.tscn`
+sits at the middle of a painted bay, and its two line volumes sit on the painted lines
+themselves: the bay is the tarmac between the stripes, each line volume is a stripe, and the
+three tile the bay without overlapping. The numbers come from the lot mesh — 6.478 m of
+paint, 0.162 m thick, 3.24 m between stripes, except the two bays at the far end of the long
+row, which are 3.405 m and carry their own line offsets. The three bays at the ends of the
+rows have paint on one side only, where the lot simply stops.
+
+`Tools/test_bay_alignment.gd` reads the stripes back out of the model and checks every bay
+against them, so this stays true rather than being true once:
+
+```
+godot --headless --script Tools/test_bay_alignment.gd
+```
+
 ## The grade
 
 One calculation, in `RoundData.rank()`, called by both the live readout and the score card.
@@ -99,11 +131,17 @@ instances the `Visuals` subtree alone, and the wheels under it follow the physic
 each frame, so steering and suspension come from the simulation rather than being animated
 to look like it.
 
-Two engine facts the chassis are built around, both measured:
+Three engine facts the chassis are built around, all measured:
 
 - **Godot's `VehicleBody3D` drives towards +Z**, because its wheels take their axle from
   local `-X`. This repo keeps `-Z` forward and applies the sign where input meets the
   engine (`PlayerCar.DRIVE_SIGN`).
+- **Steering takes no sign of its own**, which reads wrong and is right. The engine turns the
+  car around its *steered* wheels, and these chassis put those at the `-Z` nose while the
+  engine pushes along `+Z` — two reversals, which cancel, so a positive steering angle turns
+  the car the way the player calls left. It first shipped with a second negation on top of
+  that, and steered backwards. `Tools/test_drive_chassis.gd` measures which way the car
+  actually went, because the sign of this one cannot be read off the code.
 - **`engine_force` is applied at every traction wheel**, so four-wheel drive multiplies it
   by four, and the engine has no drag to speak of — `PlayerCar` fades its power towards
   `top_speed` so the car has one.
@@ -164,6 +202,7 @@ settles.
 
 ```
 godot --headless --script Tools/test_grade_table.gd          the grade table
+godot --headless --script Tools/test_bay_alignment.gd        the bays against the lot's paint
 godot --headless --script Tools/test_drive_chassis.gd        a chassis on a flat plane
 godot --headless Tools/test_round_flow.tscn                  a whole round in the lot
 godot --headless Tools/test_pause_flow.tscn -- round         Escape, pause, resume
@@ -179,8 +218,13 @@ the round or the audio has to be tested by running a scene.
 ## Not here yet
 
 - **Pedestrians.** The source's ragdolling NPC is the riskiest part of it and the least
-  load-bearing, and its mesh has no licence file. `ParkingRound.pedestrians_enabled` is the
-  gate, off by default.
+  load-bearing. `ParkingRound.pedestrians_enabled` is the gate, off by default. Its mesh is a
+  free Sketchfab download under the **Sketchfab Standard licence** — which is not one of the
+  Creative Commons grants the lot and the office building carry: it asks for the author to be
+  credited and does not, on its face, grant redistribution of the model file itself. Shipping
+  it inside a build is what it is for; committing the raw mesh to a public repository is the
+  part to check against the licence text before it comes across, and the licence and the
+  credit belong beside it in `ThirdParty/` when it does.
 - **An end to the run.** The source escalates forever, and so does this. An arcade cabinet
   probably wants a last level and a run-over screen.
 - **A remembered car.** The cabinet reloads from scratch each launch, so it always starts
