@@ -99,11 +99,17 @@ instances the `Visuals` subtree alone, and the wheels under it follow the physic
 each frame, so steering and suspension come from the simulation rather than being animated
 to look like it.
 
-Two engine facts the chassis are built around, both measured:
+Three engine facts the chassis are built around, all measured:
 
 - **Godot's `VehicleBody3D` drives towards +Z**, because its wheels take their axle from
   local `-X`. This repo keeps `-Z` forward and applies the sign where input meets the
   engine (`PlayerCar.DRIVE_SIGN`).
+- **Steering takes no sign of its own**, which reads wrong and is right. The engine turns the
+  car around its *steered* wheels, and these chassis put those at the `-Z` nose while the
+  engine pushes along `+Z` — two reversals, which cancel, so a positive steering angle turns
+  the car the way the player calls left. It first shipped with a second negation on top of
+  that, and steered backwards. `Tools/test_drive_chassis.gd` measures which way the car
+  actually went, because the sign of this one cannot be read off the code.
 - **`engine_force` is applied at every traction wheel**, so four-wheel drive multiplies it
   by four, and the engine has no drag to speak of — `PlayerCar` fades its power towards
   `top_speed` so the car has one.

@@ -44,14 +44,21 @@ const VISUAL_WHEEL_MISSING := "PlayerCar: wheel '%s' has no visual under %s."
 ## [code]up.cross(axle)[/code] = +Z -- the opposite of the -Z that [method
 ## Node3D.look_at], [ParkingSpace] and every car scene in this repo call
 ## forward. Rather than build this one car backwards, the sign is applied where
-## input meets the engine, here and in [constant STEER_SIGN]. Measured, not
-## assumed: a chassis with +2600 of engine force travels +Z.
+## input meets the engine, here. Measured, not assumed: a chassis with +2600 of
+## engine force travels +Z.
+##
+## [b]Steering takes no sign of its own[/b], which is the one thing about this
+## that reads wrong and is right. The engine's steering angle turns the car
+## around its [i]steered[/i] wheels, and this chassis puts those at its -Z nose
+## while the engine pushes it along +Z -- two reversals, which cancel. A car
+## driving the way the player calls forward and holding a positive steering
+## angle turns the way the player calls left, so
+## [code]Input.get_axis(&"steer_right", &"steer_left")[/code], which is already
+## positive for left, goes to [member VehicleBody3D.steering] as it is.
+## [code]Tools/test_drive_chassis.gd[/code] measures which way the car actually
+## goes, because reasoning about it is how it was got backwards in the first
+## place.
 const DRIVE_SIGN := -1.0
-
-## Steering follows the drive sign: with the car driving -Z, a positive steering
-## angle turns it the way a driver facing -Z would call right, so the input is
-## negated to keep "steer left" turning left.
-const STEER_SIGN := -1.0
 
 ## The car was put back at the respawn marker, by the player or by a kill plane.
 signal respawned
@@ -162,7 +169,7 @@ func _drive(delta: float) -> void:
 		return
 
 	var steer_input := Input.get_axis(&"steer_right", &"steer_left")
-	steering = move_toward(steering, steer_input * max_steer * STEER_SIGN, delta * steering_speed)
+	steering = move_toward(steering, steer_input * max_steer, delta * steering_speed)
 
 	var drive_input := Input.get_axis(&"drive_back", &"drive_forward")
 	var forward_speed := speed()
