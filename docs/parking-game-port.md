@@ -192,21 +192,37 @@ Only what `level.tscn` actually reaches is worth importing, and the cars now com
 rather than from the source, so the source's 30 MB `generic-passenger-car-pack` — and the duplicate
 it would make of the car pack already under `ThirdParty/` — stays out entirely.
 
-| Asset | Size | Needed for |
-| --- | --- | --- |
-| `Models/auzrea_parking_final/` (glTF + textures) | 256 KB | the lot itself |
-| `Models/low_rise_wall_to_wall_office_building/` | 1.2 MB | the building the pedestrians walk to |
-| `Models/Npcs/` (`.res` mesh + `WalkPhone.res` + texture) | 4.5 MB | the pedestrian (T14 only) |
-| `UI/Fonts/BasicHandwriting.ttf`, `ThreeDimRightwardsRound.ttf` | 71 KB | the HUD |
+| Asset | Size | Needed for | Status |
+| --- | --- | --- | --- |
+| `Models/auzrea_parking_final/` (glTF + textures) | 256 KB | the lot itself | imported as `ThirdParty/Models/ParkingLot/` |
+| `Models/low_rise_wall_to_wall_office_building/` | 1.2 MB | the building the pedestrians walk to | imported as `ThirdParty/Models/OfficeBuilding/` |
+| `Models/Npcs/` (`.res` mesh + `WalkPhone.res` + texture) | 4.5 MB | the pedestrian (T15 only) | **not imported** — unlicensed, see below |
+| `UI/Fonts/BasicHandwriting.ttf`, `ThreeDimRightwardsRound.ttf` | 71 KB | the HUD | **not imported** — unlicensed, see below |
 
-That is ~6 MB against a repo that already carries 116 MB under `ThirdParty/`, and ~1.5 MB of it if
-T14 is deferred.
+That is ~1.5 MB against a repo that already carries 116 MB under `ThirdParty/`, and ~6 MB if the
+pedestrian assets are ever cleared to come across.
 
-Licensing: the two Sketchfab models carry `license.txt` (attribution required) — both files come
-across into `ThirdParty/` next to the model and both get a line in the README's Credits section,
-the same treatment the existing third-party models get. **The fonts ship with no licence file**;
-their licences have to be established before they go into a published build, or the HUD uses the
-default theme font instead.
+### Licensing, as found
+
+The two Sketchfab models carry `license.txt`: both are **CC-BY-4.0**, attribution required and
+commercial use allowed. Each licence file sits beside its model in `ThirdParty/` and the credit
+line the licence asks for is reproduced verbatim in the README's Credits section.
+
+Nothing else in the source's asset set is licensed, so nothing else came across:
+
+- **The fonts ship with no licence file, and their embedded metadata rules one of them out.**
+  `ThreeDimRightwardsRound.ttf` carries `Copyright © 2002, m. klein. All rights reserved.` — a
+  third-party font with no grant to redistribute. `BasicHandwriting.ttf` is family `MyNewFont2`,
+  `Created with the help of MyScriptFont.com / Copyright belongs to the Creator`, which records no
+  grant either, though it may well be first-party handwriting. Publishing either to GitHub Pages is
+  redistribution, so the HUD (T12) uses the default theme font until provenance is established. If
+  `BasicHandwriting.ttf` is the author's own hand, saying so in a `license.txt` beside it is all it
+  takes to bring it across.
+- **`Models/Npcs/` has no licence file at all**, and the mesh name (`Sketchfab_Scene_lpMaleG…`)
+  points at a Sketchfab model whose terms are unrecorded. It is only needed by T15, which is
+  optional and gated off by default, so the import decision belongs to T15 rather than blocking
+  the lot. Its `.res` embeds an absolute `res://Models/Npcs/…png` texture path, which has to be
+  rewritten when it moves — a second reason not to move it speculatively.
 
 ## Task breakdown
 
