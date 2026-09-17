@@ -64,6 +64,10 @@ func _ready() -> void:
 func _enter_select() -> void:
 	state = State.SELECT
 	_select = vehicle_select_scene.instantiate()
+	# Handed the catalog before it enters the tree: it builds a plate per car in
+	# its own _ready.
+	if _select is VehicleSelect:
+		(_select as VehicleSelect).catalog = catalog
 	if not _select.has_signal(VEHICLE_CONFIRMED_SIGNAL):
 		push_error("ParkingGame: %s has no %s signal." % [
 			vehicle_select_scene.resource_path, VEHICLE_CONFIRMED_SIGNAL])

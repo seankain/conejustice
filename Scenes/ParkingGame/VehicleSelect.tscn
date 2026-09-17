@@ -1,0 +1,107 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://Scripts/ParkingGame/VehicleSelect.gd" id="1_select"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_select"]
+sky_top_color = Color(0.05, 0.05, 0.08, 1)
+sky_horizon_color = Color(0.09, 0.09, 0.13, 1)
+ground_bottom_color = Color(0.03, 0.03, 0.04, 1)
+ground_horizon_color = Color(0.07, 0.07, 0.1, 1)
+
+[sub_resource type="Sky" id="Sky_select"]
+sky_material = SubResource("ProceduralSkyMaterial_select")
+
+[sub_resource type="Environment" id="Environment_select"]
+background_mode = 2
+sky = SubResource("Sky_select")
+ambient_light_source = 2
+ambient_light_color = Color(0.35, 0.38, 0.5, 1)
+ambient_light_energy = 0.45
+tonemap_mode = 2
+
+[node name="VehicleSelect" type="Node3D" node_paths=PackedStringArray("rack", "name_label", "stats_label", "hint_label")]
+script = ExtResource("1_select")
+rack = NodePath("Rack")
+name_label = NodePath("UI/Root/NameLabel")
+stats_label = NodePath("UI/Root/StatsLabel")
+hint_label = NodePath("UI/Root/HintLabel")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_select")
+
+[node name="Rack" type="Node3D" parent="."]
+
+[node name="KeyLight" type="SpotLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.5, 0.8660254, 0, -0.8660254, 0.5, 0, 7.5, 4.5)
+light_energy = 11.0
+light_indirect_energy = 0.0
+spot_range = 18.0
+spot_angle = 32.0
+spot_angle_attenuation = 1.4
+
+[node name="FillLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.7071068, -0.35355338, 0.6123724, 0, 0.8660254, 0.5, -0.7071068, -0.35355338, 0.6123724, 0, 0, 0)
+light_energy = 0.45
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.9743701, 0.22495106, 0, -0.22495106, 0.9743701, 0, 2.35, 7.6)
+current = true
+fov = 55.0
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Root" type="Control" parent="UI"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="UI/Root"]
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = 28.0
+offset_right = -40.0
+offset_bottom = 74.0
+grow_horizontal = 2
+mouse_filter = 2
+text = "PICK YOUR CAR"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 34
+
+[node name="NameLabel" type="Label" parent="UI/Root"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 48.0
+offset_top = -196.0
+offset_right = 520.0
+offset_bottom = -148.0
+grow_vertical = 0
+mouse_filter = 2
+text = "SUV"
+theme_override_font_sizes/font_size = 40
+
+[node name="StatsLabel" type="Label" parent="UI/Root"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 48.0
+offset_top = -146.0
+offset_right = 520.0
+offset_bottom = -40.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 19
+
+[node name="HintLabel" type="Label" parent="UI/Root"]
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = -38.0
+offset_right = -40.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 17
