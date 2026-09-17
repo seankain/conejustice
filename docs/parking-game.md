@@ -46,6 +46,21 @@ chassis reports over a metre per second of vertical velocity for a second or two
 springs settle. Sustained, not instantaneous, because a car passing through zero in the
 middle of a three-point turn has not parked.
 
+Settling is a state the bay holds, not an announcement it makes once. A car stopped astride
+a line comes to rest in two bays at once and only one of them is being scored; a bay that
+had said its piece and gone quiet would be a bay the round could never end in.
+
+### Which bay is being scored
+
+A car is in more than one bay more often than it looks: it swings in nose first and sweeps
+its tail through the bay next door, and a car sitting on a line is in both. Of the bays the
+car is inside, **the one being scored is the one whose middle it is nearest** — not the one
+it entered most recently, which was the first rule and which is what made parking properly
+do nothing. The last bay entered was as often as not the neighbour the tail had brushed, and
+straightening up left that neighbour again and cleared the round's idea of where the car was.
+Stopping on the line worked, because a car that stops on the line never leaves the bay it
+entered last.
+
 ## The grade
 
 One calculation, in `RoundData.rank()`, called by both the live readout and the score card.
