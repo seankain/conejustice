@@ -38,8 +38,9 @@ a car around a lot against a countdown and park it between the lines; the round 
 your angle, how centred you are, whether you crossed a line and what you hit on the way in.
 
 It drives Cone Justice's cars: the source's placeholder is a box, and the SUV and minivan meshes
-are already in this repo, so both cabinets share one set of vehicles and a vehicle-select menu
-becomes a resource rather than a refactor.
+are already in this repo, so both cabinets share one set of vehicles. Picking the cabinet lands you
+on vehicle select first — a carousel of cars turning on plates, in the San Francisco Rush shape —
+and confirming one starts the round in it. Adding a car to the carousel is a resource, not code.
 
 Nothing of it is in this repo yet. [docs/parking-game-port.md](docs/parking-game-port.md) is the
 plan: what the source contains, where each file lands, which prototype defects get fixed rather

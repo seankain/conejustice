@@ -48,14 +48,19 @@ are **not** ported — see [Vehicles](#vehicles). `player.tscn`, `nissan_sentra.
 ## Where it lands
 
 ```
-Scenes/ParkingGame/          Main.tscn (game root), Lot.tscn, ScoredParkingSpace.tscn,
-                             Pedestrian.tscn, UI/
+Scenes/ParkingGame/          Main.tscn (game root), VehicleSelect.tscn, Lot.tscn,
+                             ScoredParkingSpace.tscn, Pedestrian.tscn, UI/
 Scenes/Vehicles/             drivable chassis shared by both cabinets' future needs
 Assets/Vehicles/Drivable/    DrivableVehicle resources — the vehicle-select catalog
 Scripts/ParkingGame/         one .gd per row of the table above
 ThirdParty/Models/ParkingLot/, OfficeBuilding/, Pedestrian/
 ThirdParty/Fonts/            the two fonts the HUD uses
 ```
+
+`Main.tscn` is the cabinet's own root and owns a two-state flow: **select → play**. It shows
+`VehicleSelect.tscn` first, frees it when the player confirms a car, then builds the lot and the
+round with that car. Parkade swaps whole scenes *between* cabinets; inside one, the game root adds
+and removes its own children.
 
 Cone Justice keeps `Scenes/Main.tscn` and `Scripts/{Gameplay,UI,Camera}/` where they are. Moving
 them under `Scenes/ConeJustice/` would be tidier and is deliberately not part of this port: it
@@ -102,7 +107,8 @@ primitive meshes, and the one scene with a real car on it — `player.tscn`, on 
 with `SUV_body.res`, `Minivan_body.res`, `Wheel.res` and `MinivanWheel.res`, mounted in
 `Scenes/SUV.tscn` and `Scenes/Minivan.tscn`. The parking game uses those meshes, which means the
 source's car pack is never imported, the primitives are never ported, and both cabinets show the
-same vehicles — the thing that makes a **vehicle-select menu** worth building later.
+same vehicles — which is what makes the **vehicle select** screen (T10) worth having: picking a car
+before the round is only interesting if the cars look like something.
 
 What can and cannot be reused from those scenes:
 
@@ -123,7 +129,16 @@ parking game's are `VehicleBody3D` chassis, and neither scene changes when the o
 
 `VehicleProfile` (Cone Justice's spawn-time footprint data) is left alone. The drivable side gets
 its own `DrivableVehicle` resource in T4, because what the lot needs to know before a car exists
-and what a select menu needs to show are different lists.
+and what the select screen needs to show are different lists.
+
+### One rule the chassis has to follow
+
+**Every visual the chassis has — body mesh and all four wheel meshes — hangs off a single `Visuals`
+node.** The select screen spins cars on turntables, and a `VehicleBody3D` parented to a rotating
+node does not spin: it is a physics body, the engine owns its transform, and it will fight the
+turntable and then fall over. The preview is therefore built from the `Visuals` subtree alone,
+instanced without ever adding the body to the tree. One node in the chassis scene is all that
+costs, and it is invisible at runtime — but retrofitting it after four scenes exist is not.
 
 ## Translation rules
 
@@ -211,11 +226,12 @@ credits. No vehicle assets are imported.
 ### T2 — Skeleton, input map, groups
 **Depends on:** T1 · **Size:** S
 
-Create `Scenes/ParkingGame/` and `Scripts/ParkingGame/` with `Main.tscn` as a `Node3D` that loads
-and shows an empty lot. Add the input actions — `drive_forward`, `drive_back`, `steer_left`,
-`steer_right` (WASD) — using this repo's snake_case naming, not the source's `Forward`/`Left`. Add
-the `NpcVehicle` and `NpcLiving` global groups. Write `Obstacle.gd`: the `ObstacleType` enum plus
-the one group name that marks a node as hittable.
+Create `Scenes/ParkingGame/` and `Scripts/ParkingGame/` with `Main.tscn` as a `Node3D` under
+`ParkingGame.gd`, which owns the select → play flow described in [Where it lands](#where-it-lands).
+Until T10 exists it goes straight to an empty lot. Add the input actions — `drive_forward`,
+`drive_back`, `steer_left`, `steer_right` (WASD) — using this repo's snake_case naming, not the
+source's `Forward`/`Left`. Add the `NpcVehicle` and `NpcLiving` global groups. Write `Obstacle.gd`:
+the `ObstacleType` enum plus the one group name that marks a node as hittable.
 
 Do **not** add a `Pause` action: Escape belongs to Parkade. T12 decides what the parking game does
 with it.
@@ -225,34 +241,35 @@ with it.
 ### T3 — Drivable chassis
 **Depends on:** T2 · **Size:** M
 
-Build `Scenes/Vehicles/SuvDrivable.tscn`: a `VehicleBody3D` carrying the SUV body mesh and four
-`VehicleWheel3D`s with the wheel mesh, placed from the numbers in [Vehicles](#vehicles), on a
-convex collision shape of its own. Port `Player.cs` → `PlayerCar.gd` and put it on the chassis,
-minus the camera (T5): steering via `move_toward` against `max_steer`, engine force from the drive
-axis, `R` respawns to the `Respawn` group marker, `body_entered` reports what was hit. Signals
-`respawned` and `hit_obstacle(kind)` replace the two C# delegates. `_IntegrateForces`'s deferred
-respawn flag is dead weight once respawn is a method — drop it.
+Build `Scenes/Vehicles/SuvDrivable.tscn`: a `VehicleBody3D` carrying a `Visuals` node — body mesh
+plus four wheel meshes, per [One rule the chassis has to follow](#one-rule-the-chassis-has-to-follow)
+— four `VehicleWheel3D`s placed from the numbers in [Vehicles](#vehicles), and a convex collision
+shape of its own. Port `Player.cs` → `PlayerCar.gd` and put it on the chassis, minus the camera
+(T5): steering via `move_toward` against `max_steer`, engine force from the drive axis, `R`
+respawns to the `Respawn` group marker, `body_entered` reports what was hit. Signals `respawned`
+and `hit_obstacle(kind)` replace the two C# delegates. `_IntegrateForces`'s deferred respawn flag
+is dead weight once respawn is a method — drop it.
 
 Tune mass, engine power, steering rate and suspension against the real body: the source's
 `ENGINE_POWER = 300` was picked for a box.
 
 **Done when:** the SUV drives, steers and brakes convincingly, does not roll over on a normal turn,
-and respawns to the marker with zeroed velocities.
+respawns to the marker with zeroed velocities, and `Visuals` instanced on its own renders a
+complete, static car.
 
 ### T4 — Vehicle catalog
 **Depends on:** T3 · **Size:** S
 
-Make the chassis data-driven so that adding a car, and later a select menu, is a resource rather
-than a code change. `DrivableVehicle` (`Resource`): display name, chassis `PackedScene`, mass,
-engine power, max steer, and a thumbnail slot for the menu that does not exist yet. Author
-`Assets/Vehicles/Drivable/Suv.tres` and `Minivan.tres`, with `MinivanDrivable.tscn` built the same
-way as T3 from `Minivan_body.res`/`MinivanWheel.res`. `ParkingRound` spawns the player's car from a
-catalog entry, defaulting to the first.
+Make the chassis data-driven so that adding a car is a resource, not a code change.
+`DrivableVehicle` (`Resource`): display name, chassis `PackedScene`, mass, engine power, max steer,
+and the handful of numbers the select screen shows. Author `Assets/Vehicles/Drivable/Suv.tres` and
+`Minivan.tres`, with `MinivanDrivable.tscn` built the same way as T3 from
+`Minivan_body.res`/`MinivanWheel.res`. A `VehicleCatalog` resource holds the ordered list — that
+order is the carousel's order. `ParkingRound` spawns the player's car from a catalog entry,
+defaulting to the first.
 
-The select **menu** is out of scope here; what is in scope is that building it later is a scene,
-not a refactor. While in the area: `Assets/Vehicles/SUV.tres` still carries the default 1.8 × 4.5
-footprint and Cone Justice warns about it at every launch — re-run
-`Tools/derive_vehicle_profile.gd` and fix it.
+While in the area: `Assets/Vehicles/SUV.tres` still carries the default 1.8 × 4.5 footprint and
+Cone Justice warns about it at every launch — re-run `Tools/derive_vehicle_profile.gd` and fix it.
 
 **Done when:** switching the catalog entry in the inspector changes which car the player drives,
 and both cars drive without per-vehicle code.
@@ -275,12 +292,13 @@ never does anything. Clamp the new pitch in radians against `deg_to_rad(tilt_max
 Port `level.tscn` → `Lot.tscn`: geometry, static bodies, lighting, `WorldEnvironment`, respawn
 marker, the twenty space placements (as plain markers for now), `KillPlane` and `OffroadZone`.
 Port `KillPlane.gd` and `OffroadZone.gd`. The `NavigationRegion3D` and `BuildingEntrance` come
-across now even though nothing navigates until T14; baking navigation later against a changed lot
+across now even though nothing navigates until T15; baking navigation later against a changed lot
 is worse than carrying two nodes.
 
-The spaces were authored around a box roughly the size of the source's placeholder car. Check they
-still fit the real SUV before building anything on top of them, and move the markers, not the car,
-if they do not.
+The parking game keeps its own lot; sharing Cone Justice's street is not on the table for this
+port. The spaces were authored around a box roughly the size of the source's placeholder car —
+check they still fit the real SUV before building anything on top of them, and move the markers,
+not the car, if they do not.
 
 **Done when:** the car drives the whole lot, falling off respawns it, the offroad zone accumulates
 time, and the SUV fits a space with room to open an imaginary door.
@@ -326,7 +344,36 @@ space reports measurements to it.
 **Done when:** a full loop plays — drive, park, grade, hold, next round with less time and more
 cars — and a failed park re-runs the same level.
 
-### T10 — Parked cars
+### T10 — Vehicle select
+**Depends on:** T4, T9 · **Size:** M
+
+The screen between picking the cabinet and driving it, in the San Francisco Rush shape: a scrolling
+carousel of cars, each turning slowly on its own plate, stats beside the focused one.
+
+It is a **3D scene, not a `Control`**. `VehicleSelect.tscn` holds a fixed camera, a dark
+environment matched to the Parkade menu, a key light, and a rack of `VehicleTurntable` nodes spaced
+along X — one per `VehicleCatalog` entry, built at `_ready()` from the catalog so adding a car adds
+a plate. Each turntable instances only the chassis scene's `Visuals` subtree and rotates it about Y
+at a constant rate; the chassis itself is never added to the tree, for the reason in
+[One rule the chassis has to follow](#one-rule-the-chassis-has-to-follow).
+
+- **Scrolling:** one tween on the rack's X (or the camera's) per step, short and eased, so a held
+  key steps rather than slides. The focused plate is lit and full size; its neighbours are dimmed
+  and set back, which is most of the arcade look for very little work.
+- **Input:** `steer_left`/`steer_right` and the arrow keys step, `ui_accept` and a click on the
+  focused car confirm, Escape leaves for Parkade — the pause menu does not exist here, so the
+  shell's Escape handling is exactly right and nothing needs wiring.
+- **Stats:** name plus the handful of numbers already on `DrivableVehicle`. Do not invent a
+  handling stat that nothing reads.
+- **Confirm:** `ParkingGame.gd` frees the select scene, builds the lot and starts the round with
+  the chosen `DrivableVehicle`. The choice lives on the game root for the session; the cabinet is a
+  fresh scene each time it is launched from Parkade, so a re-entry starts back at select.
+
+**Done when:** launching the parking game lands on select, the carousel steps both ways without
+running off either end, every catalog car appears and spins, confirming starts a round in the car
+that was showing, Escape leaves to Parkade, and adding a third `.tres` needs no code.
+
+### T11 — Parked cars
 **Depends on:** T9, T4 · **Size:** M
 
 Port `Spawner.cs` → `TrafficSpawner.gd` and `NpcCar.cs` → `ParkedCar.gd`, filling spaces from the
@@ -343,7 +390,7 @@ sampling, which redraws until a set fills and gets slower the fuller the lot is.
 clears them with no leaked nodes, no two cars spawn into the same space, and a full lot holds frame
 rate.
 
-### T11 — HUD and score card
+### T12 — HUD and score card
 **Depends on:** T9 · **Size:** M
 
 Port `hud.tscn` + `Hud.cs` → `ParkingHUD.tscn`/`.gd`, `LevelScoreHudElement.cs` → `ScoreCard.gd`,
@@ -357,22 +404,22 @@ frame the way `Hud.cs` does. One clock formatter, shared with the score card, no
 **Done when:** clock, live score and grade card all read correctly through a full round, and the
 debug readout is off in a default build.
 
-### T12 — Pause, and the way back to Parkade
-**Depends on:** T11 · **Size:** S
+### T13 — Pause, and the way back to Parkade
+**Depends on:** T12 · **Size:** S
 
 Port `Menu.cs`/`Menu.tscn` → `PauseMenu.gd`/`.tscn`, keeping the play/resume duality but dropping
 `Quit` in favour of **PARKADE MENU**, which calls `Parkade.return_to_menu()`.
 
 Escape opens this menu and Escape closes it. Parkade only sees Escape as *unhandled* input, so the
 pause menu consuming it (`get_viewport().set_input_as_handled()`) is all it takes to keep Escape
-from dropping the player out of the game mid-round. Verify both: Escape pauses, Escape resumes,
-and the menu button leaves.
+from dropping the player out of the game mid-round. Verify all three: Escape pauses, Escape
+resumes, and Escape on the select screen — where there is no pause menu — still leaves to Parkade.
 
 **Done when:** pausing stops the round and the clock, resuming continues it, and leaving returns to
 a working Parkade menu with the cursor visible.
 
-### T13 — Audio
-**Depends on:** T12 · **Size:** S
+### T14 — Audio
+**Depends on:** T13 · **Size:** S
 
 Engine note, collisions, a round-over sting through the existing `SfxPlayer`; `MusicPlayer` already
 runs across scene changes and needs nothing. New clips follow
@@ -380,8 +427,8 @@ runs across scene changes and needs nothing. New clips follow
 
 **Done when:** the game is audible and the Music/SFX buses behave as they do in Cone Justice.
 
-### T14 — Pedestrians and ragdolls *(optional, gated)*
-**Depends on:** T10 · **Size:** L
+### T15 — Pedestrians and ragdolls *(optional, gated)*
+**Depends on:** T11 · **Size:** L
 
 The highest-risk part of the source and the least load-bearing. `HumanNpc.tscn` is 100 KB of
 skeleton with a `PhysicalBoneSimulator3D`, `MobileNpc.cs` drives it with a `NavigationAgent3D`, and
@@ -395,19 +442,21 @@ live without it. `LookAt` on a zero-length or vertical direction errors — guar
 **Done when:** a pedestrian walks from a space to the building entrance, ragdolls on contact with
 the player, is cleaned up on round reset, and the web build holds frame rate with several active.
 
-### T15 — Web export and performance
-**Depends on:** T13 · **Size:** M
+### T16 — Web export and performance
+**Depends on:** T14 · **Size:** M
 
 Export the `Web` preset with the parking game included and play it in a browser. Watch the `.pck`
 size delta, the load time, and physics cost with a full lot of frozen chassis. Reusing Cone
 Justice's meshes means the delta should be dominated by the lot and the building, not the cars —
-if it is not, something is importing the source's car pack by accident.
+if it is not, something is importing the source's car pack by accident. Check the select screen
+too: several spinning cars on screen at once is the first thing the player sees, and a bad first
+frame rate reads as a broken game.
 
 **Done when:** the preset exports, both games play from one build in a browser, and the size and
 frame rate are recorded in this document.
 
-### T16 — Open the cabinet
-**Depends on:** T15 · **Size:** S
+### T17 — Open the cabinet
+**Depends on:** T16 · **Size:** S
 
 Flip `available` to `true` on the `parking_game` entry in `Scripts/Autoload/Parkade.gd`, check the
 tagline and control hints against what shipped, update the README, and add a
@@ -418,15 +467,16 @@ tagline and control hints against what shipped, update the README, and add a
 ### Order
 
 ```
-T1 ─ T2 ─ T3 ─┬─ T4 ──────────────┐
-              ├─ T5               │
-              └─ T6 ─ T7 ─ T8 ─ T9 ┴─┬─ T10 ─┬─ T14 (optional)
-                                     └─ T11 ─┴─ T12 ─ T13 ─ T15 ─ T16
+T1 ─ T2 ─ T3 ─┬─ T4 ─────────────────┐
+              ├─ T5                  │
+              └─ T6 ─ T7 ─ T8 ─ T9 ─┬┴─ T10 ─────────────┐
+                                    ├─ T11 ─ T15 (opt.)  │
+                                    └─ T12 ─ T13 ─ T14 ─ T16 ─ T17
 ```
 
 T1–T6 is a real car driving around a real lot and is worth doing in one go. T7–T9 is the actual
-game. Everything after T12 is shippable-quality work that can slip without blocking the cabinet
-from opening, except T15.
+game, and T10 is the front door to it. Everything after T13 is shippable-quality work that can slip
+without blocking the cabinet from opening, except T16.
 
 ## Known defects in the source
 
@@ -440,7 +490,7 @@ duplication ones are in [Shared code](#shared-code-not-copied-code) and are not 
 - **`CameraControl` tilt clamp is a no-op** and mixes degrees with radians (T5).
 - **`Game._Input` polls `Input.IsActionPressed("Pause")` inside an event handler**, so pause fires
   on any key held while Escape is down. Use `event.is_action_pressed`.
-- **`GenerateObstacles` rejection-samples** space indices until a set fills (T10).
+- **`GenerateObstacles` rejection-samples** space indices until a set fills (T11).
 - **`KillPlane` invokes the player's delegate itself** — impossible in GDScript, and the wrong
   shape anyway (Translation rules).
 - **`ParkingSpace` writes `level.Score` every frame** from inside the space. The round owns the
@@ -451,7 +501,7 @@ duplication ones are in [Shared code](#shared-code-not-copied-code) and are not 
   comparing the car's `-Z` against the space's `+Z`. Compare against the space's forward axis
   directly and the 90 disappears.
 - **`NpcCar._PhysicsProcess` is an empty override** around commented-out driving code, and the
-  class carries three steering fields it never uses (T10).
+  class carries three steering fields it never uses (T11).
 
 ## Not being ported
 
@@ -465,13 +515,20 @@ and 30 MB of assets behind them).
 
 If any of it turns out to be needed, it is one file in a repo that is not going anywhere.
 
+## Settled
+
+- **The parking game keeps its own lot.** Sharing Cone Justice's street would be a bigger,
+  better-looking change and a much larger port; not this one.
+- **Vehicle select sits between the cabinet and the round** (T10), Rush-style: a carousel of cars
+  spinning on plates, not a list of names.
+
 ## Open questions
 
-1. **Does the parking game keep Cone Justice's street, or its own lot?** This plan ports the
-   source's lot. Sharing one environment between both cabinets would be a bigger, better-looking
-   change and a much larger port.
-2. **Are the two fonts licensed for redistribution?** Blocking for T1 if the HUD is to use them.
-3. **How many rounds is a run?** The source escalates forever. An arcade cabinet probably wants an
+1. **Are the two fonts licensed for redistribution?** Blocking for T1 if the HUD is to use them.
+2. **How many rounds is a run?** The source escalates forever. An arcade cabinet probably wants an
    end, and Cone Justice already has a run-over screen worth matching.
-4. **Where does vehicle select live** — a screen before the round, a Parkade-level garage shared by
-   both cabinets, or unlockable by grade? T4 only guarantees the data is ready for whichever.
+3. **Does the select screen remember the last car?** It does not in T10 — the cabinet reloads from
+   scratch each launch. Persisting it means a `user://` config file, which nothing in this repo has
+   yet, so it is worth doing once for both games or not at all.
+4. **Are all catalog cars available from the start?** Unlocking by grade is the obvious arcade
+   move, and it is the one reason the carousel would need a locked state.
