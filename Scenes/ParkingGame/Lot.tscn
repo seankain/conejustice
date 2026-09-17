@@ -115,64 +115,76 @@ transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -18.
 [node name="Spaces" type="Node3D" parent="."]
 
 [node name="Space01" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.261, 0, -15.3971)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9126, 0, -15.3967)
+
+[node name="LeftLine" parent="Spaces/Space01" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.70255)
+
+[node name="RightLine" parent="Spaces/Space01" index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.70255)
 
 [node name="Space02" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.261, 0, -12.0591)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9126, 0, -11.9916)
+
+[node name="LeftLine" parent="Spaces/Space02" index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.70255)
+
+[node name="RightLine" parent="Spaces/Space02" index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.70255)
 
 [node name="Space03" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.261, 0, -8.64779)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9126, 0, -8.669)
 
 [node name="Space04" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.261, 0, -5.4238)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9126, 0, -5.429)
 
 [node name="Space05" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.261, 0, -2.22054)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9126, 0, -2.189)
 
 [node name="Space06" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.261, 0, 1.00196)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9126, 0, 1.051)
 
 [node name="Space07" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.261, 0, 4.28177)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9126, 0, 4.2909)
 
 [node name="Space08" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.261, 0, 7.51259)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9126, 0, 7.5309)
 
 [node name="Space09" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.261, 0, 10.7838)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9126, 0, 10.7709)
 
 [node name="Space10" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.261, 0, 14.0146)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9126, 0, 14.0109)
 
 [node name="Space11" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.261, 0, 17.2858)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9126, 0, 17.2509)
 
 [node name="Space12" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.186, 0, -15.2243)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.4419, 0, -15.2457)
 
 [node name="Space13" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.186, 0, -11.9935)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.4419, 0, -12.0057)
 
 [node name="Space14" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.186, 0, -8.76264)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.4419, 0, -8.7657)
 
 [node name="Space15" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.186, 0, -5.49144)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.4419, 0, -5.5257)
 
 [node name="Space16" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.186, 0, -2.30101)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.4419, 0, -2.2857)
 
 [node name="Space17" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.186, 0, 0.97019)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.4419, 0, 0.9543)
 
 [node name="Space18" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.186, 0, 4.201)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.4419, 0, 4.1943)
 
 [node name="Space19" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.186, 0, 7.4722)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.4419, 0, 7.4343)
 
 [node name="Space20" parent="Spaces" instance=ExtResource("5_space")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.186, 0, 10.7434)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.4419, 0, 10.6743)
 
 [node name="OffroadZone" type="Area3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.7609415, 0, 0)

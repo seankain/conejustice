@@ -61,6 +61,23 @@ straightening up left that neighbour again and cleared the round's idea of where
 Stopping on the line worked, because a car that stops on the line never leaves the bay it
 entered last.
 
+### Where the bays are
+
+The bay volumes are not eyeballed onto the model. Every `ScoredParkingSpace` in `Lot.tscn`
+sits at the middle of a painted bay, and its two line volumes sit on the painted lines
+themselves: the bay is the tarmac between the stripes, each line volume is a stripe, and the
+three tile the bay without overlapping. The numbers come from the lot mesh — 6.478 m of
+paint, 0.162 m thick, 3.24 m between stripes, except the two bays at the far end of the long
+row, which are 3.405 m and carry their own line offsets. The three bays at the ends of the
+rows have paint on one side only, where the lot simply stops.
+
+`Tools/test_bay_alignment.gd` reads the stripes back out of the model and checks every bay
+against them, so this stays true rather than being true once:
+
+```
+godot --headless --script Tools/test_bay_alignment.gd
+```
+
 ## The grade
 
 One calculation, in `RoundData.rank()`, called by both the live readout and the score card.
@@ -185,6 +202,7 @@ settles.
 
 ```
 godot --headless --script Tools/test_grade_table.gd          the grade table
+godot --headless --script Tools/test_bay_alignment.gd        the bays against the lot's paint
 godot --headless --script Tools/test_drive_chassis.gd        a chassis on a flat plane
 godot --headless Tools/test_round_flow.tscn                  a whole round in the lot
 godot --headless Tools/test_pause_flow.tscn -- round         Escape, pause, resume
