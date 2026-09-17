@@ -202,6 +202,12 @@ func _spawn_car() -> void:
 	car.add_child(_camera)
 
 
+## Whether the round's camera wants the pointer captured. Asked by the game root
+## after a pause, which had to release it to show a menu.
+func camera_captures_mouse() -> bool:
+	return _camera != null and _camera.capture_mouse
+
+
 func _connect_bays() -> void:
 	for bay in _bays():
 		bay.player_entered.connect(_on_bay_entered.bind(bay))

@@ -38,8 +38,18 @@ enum State {
 @export var chase_camera_scene: PackedScene
 ## Clock, grade and score card. Added with the lot and pointed at the round.
 @export var hud_scene: PackedScene
+## Escape, mid-round. Only exists while a round is being played: on the select
+## screen Escape belongs to the shell.
+@export var pause_menu_scene: PackedScene
 
 var state: State = State.SELECT
+
+## Puts the pointer back the way the round had it. The pause menu let it go so
+## its buttons could be clicked; the chase camera wants it captured again.
+func _on_resumed() -> void:
+	if current_round != null and current_round.camera_captures_mouse():
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
 
 ## The car the player confirmed, handed to the round when it starts. Falls back
 ## to the catalog's first entry, so the cabinet is playable before the select
@@ -120,3 +130,8 @@ func _enter_play() -> void:
 		# resolves /root/Main/Level every frame.
 		hud.follow(current_round)
 	add_child(current_round)
+	if pause_menu_scene == null:
+		return
+	var pause_menu := pause_menu_scene.instantiate() as PauseMenu
+	add_child(pause_menu)
+	pause_menu.resumed.connect(_on_resumed)
