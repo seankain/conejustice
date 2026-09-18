@@ -2,8 +2,10 @@
 
 The second Parkade cabinet. Pick a car, drive it around a lot against a countdown, and put
 it between the lines. The round is graded A to F on how square you are, how centred, what
-you crossed and what you hit. Park well and the next level gives you less time and more
-cars to park between; park badly and you run the same level again.
+you crossed and what you hit. Park well and the next level gives you less time, more cars
+to park between, and more going on between them — spaces opening up as parked cars leave,
+and rivals driving in to take the one you were going for. Park badly and you run the same
+level again.
 
 It is a GDScript port of [ParkingThings](https://github.com/seankain/parkingthings/tree/main/ParkingThings),
 which is the same engine written in C# — and a .NET build does not run on the web at all.
@@ -14,8 +16,9 @@ file is about the game that came out of it.
 ## The loop
 
 ```
-vehicle select ──> round ──> graded ──> pass: next level, less time, more cars
-                     ^                  fail: the same level again
+vehicle select ──> round ──> graded ──> pass: next level, less time, fuller lot,
+                     ^                        and more going on in it
+                     │                  fail: the same level again
                      └──────────────────┘
 ```
 
@@ -179,6 +182,89 @@ group; the spawner's cars are marked `driven_by_player = false` and stay out of 
 is what stops a bay measuring the traffic and ending the round the moment a parked car
 settles.
 
+## What the lot does while you park
+
+The source's lot is filled once at the start of a level and then holds perfectly still,
+which makes its level twenty a level one with less time on it. `LotEvents` rolls two dice
+every `ParkingRules.RANDOM_EVENT_SECONDS`, and what they can do gets likelier every level:
+
+- **A car leaves.** One of the parked cars backs out of its bay, drives down the aisle and
+  goes. It opens a space that was not there when the round started — and puts a moving car
+  across the aisle while you are lining up somewhere else.
+- **A rival arrives.** A car comes in off the road looking for a space and takes one. Near
+  the top of the lot, where there were two spaces left, it takes one of yours.
+
+|  | Level 1 | Level 3 | Level 5 | Ceiling |
+|---|---|---|---|---|
+| a parked car leaves | 0.20 | 0.36 | 0.52 | 0.75 |
+| a rival arrives | 0.15 | 0.35 | 0.55 | 0.85 |
+| …and goes for the space nearest the player | 0.25 | 0.55 | 0.85 | 0.90 |
+| cars under their own power at once | 1 | 2 | 3 | 3 |
+
+A round is five or six rolls long, so level one is about one car leaving per round and a
+rival every second round; from level eight it is both, most rolls, up to three at a time.
+`ParkingRound.lot_events_enabled` turns the whole thing off and gives the source's lot
+back — which is what the round-flow test wants while it measures a park.
+
+**A rival goes for the space nearest the player** as often as the third row says, and any
+free space the rest of the time. Uniformly random is the honest choice and the boring one:
+in a lot with eighteen free bays a rival takes one the player was never going to reach,
+and the event goes unnoticed. That fraction is the difference between a competitor and
+scenery, so it climbs with the rest.
+
+### The cars that drive themselves
+
+`NpcDriver` moves the car rather than simulating it. The car is frozen, the same as every
+other parked car, and its transform is written each physics frame —
+`FREEZE_MODE_KINEMATIC` rather than the static freeze a parked car gets, so it still
+shoves the player's car around instead of standing through it.
+
+Three reasons, in the order they matter. A lot full of live `VehicleBody3D`s is the first
+thing to sink the web build, and a driving car has no better claim on a suspension
+simulation than a parked one. A car parking itself has to end up *between the lines*,
+which is the one thing the round measures, and a steering controller ends up wherever the
+physics leaves it. What it costs is a car that cannot be shoved out of its bay, which is
+the right loss to take.
+
+What it drives like is a bicycle: a heading, a speed, and a turn rate that is the speed
+divided by the tightest circle a car can hold. That is the right way round — a car's
+steering lock fixes its *circle*, not how fast it comes round one, so a crawling car takes
+its time getting through a turn it could not take any tighter at speed. Two details fall
+out of that being a car rather than a dot:
+
+- **It backs out of a bay in a straight line first**, and only starts turning once its far
+  end is clear of the paint. A car that turns any earlier sweeps that end through the cars
+  parked next door.
+- **It swings its tail away from where it is going**, which reads backwards and is how a
+  real car leaves a perpendicular bay: back out swinging right to drive away left. A car
+  that was *backed* into its bay noses out and does the opposite.
+
+**A car with nobody in it yields to the car with somebody in it.** Collisions are scored
+on the player's own `hit_obstacle`, which does not ask who drove into whom, so a rival
+that ran into the player would be taking a grade off them for it. A driver that finds the
+player's car in the piece of lot it was about to occupy stops and waits.
+
+The ride height is measured, never assumed. `TrafficSpawner` drops its parked cars onto
+their own suspension and writes down where each chassis came to rest; a car that is being
+moved rather than simulated is driven at that height, and a rival turns up in a chassis
+the lot has already measured. The lot is flat where cars drive, which is the assumption
+that lets the height be a number rather than a ground query — a lot with a ramp in it
+would need one.
+
+### Where the lanes are
+
+`LotGeometry` works the lanes out from the bays rather than having them authored onto
+them; twenty inspector overrides that have to be right and that nothing checks is the
+alternative. A bay's way out is the side its own middle looks at when it looks at the
+middle of the lot, the lanes run `LANE_OFFSET` out from the paint, and the gate — where
+rivals come in and leaving cars stop mattering — is past the run-up to the last bay in the
+row, at the end of the lot the player's own respawn marker is at. Past the *run-up* rather
+than past the bay, because the first version put the gate inside the run-up to the end bay:
+a rival came in already past the point it was meant to turn, could not reach a space a
+car's length behind it, and drove a slow circle in the aisle before coming back for it.
+`Tools/test_lot_events.tscn` checks all of it against the real lot, because it is derived
+rather than drawn.
+
 ## Controls
 
 | | |
@@ -192,7 +278,9 @@ settles.
 
 | Where | What |
 |---|---|
-| `ParkingRules` | round length, the decrement per level and its floor, cars per level, the grade boundaries, the pass mark |
+| `ParkingRules` | round length, the decrement per level and its floor, cars per level, the grade boundaries, the pass mark, and the odds of everything the lot does per level |
+| `LotGeometry` | how far out the lanes run, where a car starts turning, where the gate is |
+| `NpcDriver` | how fast a car with nobody in it drives, how tightly it turns, how much room it leaves the player |
 | `DrivableVehicle` resources | mass, engine power, steering lock, top speed, per car |
 | `ScoredParkingSpace` | settle speed and settle time |
 | `PlayerCar` | brake strength, idle brake, steering rate |
@@ -205,12 +293,13 @@ godot --headless --script Tools/test_grade_table.gd          the grade table
 godot --headless --script Tools/test_bay_alignment.gd        the bays against the lot's paint
 godot --headless --script Tools/test_drive_chassis.gd        a chassis on a flat plane
 godot --headless Tools/test_round_flow.tscn                  a whole round in the lot
+godot --headless Tools/test_lot_events.tscn                 a car leaving, a rival arriving, the odds
 godot --headless Tools/test_pause_flow.tscn -- round         Escape, pause, resume
 godot --headless Tools/test_pause_flow.tscn -- select        Escape with no menu in the way
 godot --headless Tools/test_audio_cues.tscn                  the cues and the engine note
 ```
 
-The last three are scenes rather than `--script` tools for a reason worth remembering: a
+The last four are scenes rather than `--script` tools for a reason worth remembering: a
 script run with `--script` replaces the main loop, so autoloads are never registered and
 any script naming `Parkade` or `SfxPlayer` fails to compile. Anything touching the shell,
 the round or the audio has to be tested by running a scene.

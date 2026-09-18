@@ -21,7 +21,10 @@ const SECONDS_PER_LEVEL := 5.0
 ## as well and then never reads it: its spawner fills level x 2 spaces from
 ## level 1 onwards.
 const VEHICLES_PER_LEVEL := 2
-## Seconds between random events -- a pedestrian walking out of a car (T15).
+## Seconds between rolls of the lot's dice: whether a parked car backs out and
+## leaves, and whether a rival turns up for a space ([LotEvents]). The source
+## keeps the same constant for a pedestrian climbing out of a car (T15), which is
+## the same clock and would be the third roll on it.
 const RANDOM_EVENT_SECONDS := 10.0
 ## Seconds the round holds on the score card before the next one starts.
 const ROUND_OVER_SECONDS := 5.0
@@ -39,3 +42,68 @@ const MAX_ANGLE_RANK := 3
 ## Grade at or below this numeric rank advances to the next level; worse re-runs
 ## the same one. Source: [code]levelData.GradeAsNumeric <= 2[/code], a C.
 const PASSING_RANK := 2
+
+## The chance, per roll, that one of the parked cars backs out and leaves: at
+## level one, per level after that, and the ceiling it climbs to.
+##
+## Nothing in the source escalates but the clock and the number of parked cars,
+## which makes its level twenty a level one in a hurry. These are what make a
+## later lot a busier one rather than only a fuller one. A round at level one is
+## five or six rolls long, so a fifth of a chance each is about one car leaving
+## per round; at the ceiling it is most rounds, twice.
+const DEPARTURE_CHANCE := 0.20
+const DEPARTURE_CHANCE_PER_LEVEL := 0.08
+const DEPARTURE_CHANCE_MAX := 0.75
+
+## The same, for a rival driving in off the road to take a space. It starts
+## lower than a departure and climbs faster: a car leaving is a gift and a rival
+## is a tax, and the tax is what the levels are for.
+const ARRIVAL_CHANCE := 0.15
+const ARRIVAL_CHANCE_PER_LEVEL := 0.10
+const ARRIVAL_CHANCE_MAX := 0.85
+
+## The chance a rival goes for the free space nearest the player rather than any
+## free space at all. In an empty lot a rival that picks at random takes a bay
+## the player was never going to reach; this is what makes it a competitor rather
+## than scenery, so it climbs too.
+const RIVAL_FOCUS_CHANCE := 0.25
+const RIVAL_FOCUS_PER_LEVEL := 0.15
+const RIVAL_FOCUS_MAX := 0.9
+
+## How many cars may be driving themselves around the lot at once, at level one,
+## and how many levels buy another one.
+##
+## A cap rather than a chance, and a low one. Every car under its own power is a
+## car the player can be hit by, and three of them in a twenty-bay lot is already
+## a lot to keep an eye on.
+const ACTIVE_DRIVERS := 1
+const LEVELS_PER_EXTRA_DRIVER := 2
+const ACTIVE_DRIVERS_MAX := 3
+
+
+## The chance, per roll, of a parked car leaving at [param level].
+static func departure_chance(level: int) -> float:
+	return _chance(DEPARTURE_CHANCE, DEPARTURE_CHANCE_PER_LEVEL, DEPARTURE_CHANCE_MAX, level)
+
+
+## The chance, per roll, of a rival arriving at [param level].
+static func arrival_chance(level: int) -> float:
+	return _chance(ARRIVAL_CHANCE, ARRIVAL_CHANCE_PER_LEVEL, ARRIVAL_CHANCE_MAX, level)
+
+
+## The chance a rival at [param level] goes for the space the player is nearest.
+static func rival_focus_chance(level: int) -> float:
+	return _chance(RIVAL_FOCUS_CHANCE, RIVAL_FOCUS_PER_LEVEL, RIVAL_FOCUS_MAX, level)
+
+
+## How many cars may be driving themselves at [param level].
+static func active_driver_limit(level: int) -> int:
+	var extra := maxi(level - 1, 0) / LEVELS_PER_EXTRA_DRIVER
+	return clampi(ACTIVE_DRIVERS + extra, ACTIVE_DRIVERS, ACTIVE_DRIVERS_MAX)
+
+
+## One straight line and a ceiling, counted from level one -- the same off-by-one
+## the clock had: a level reached by a reset and a level the game booted into
+## have to be the same level.
+static func _chance(base: float, per_level: float, ceiling: float, level: int) -> float:
+	return clampf(base + float(maxi(level, 1) - 1) * per_level, 0.0, ceiling)

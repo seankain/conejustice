@@ -47,10 +47,22 @@ signal message(text: String)
 ## The one-line reasons a round can end, shown by the HUD.
 const MESSAGE_GO := "GO!"
 const MESSAGE_FAILED := "FAILED TO PARK"
+## ...and the two things the lot can do to you while it is running.
+const MESSAGE_CAR_LEAVING := "A CAR IS BACKING OUT"
+const MESSAGE_SPACE_TAKEN := "A RIVAL TOOK A SPACE"
 
 ## Pedestrians are the riskiest part of the port and the least load-bearing, so
 ## the cabinet can open without them (T15).
 @export var pedestrians_enabled: bool = false
+
+## Whether the lot does anything but hold still: cars leaving, rivals arriving
+## ([LotEvents]). Off gives the source's lot, which fills once per level and then
+## waits -- which is what the round-flow test wants while it measures a park.
+@export var lot_events_enabled: bool = true:
+	set(value):
+		lot_events_enabled = value
+		if _events != null:
+			_events.enabled = value
 
 ## Which level this is. Round one is level one.
 var level: int = 1
@@ -66,6 +78,8 @@ var _vehicle: DrivableVehicle = null
 var _catalog: VehicleCatalog = null
 var _camera_scene: PackedScene = null
 var _traffic: TrafficSpawner = null
+## The lot's own traffic: what leaves, what turns up, and how likely either is.
+var _events: LotEvents = null
 var _camera: ChaseCamera = null
 ## The bay being scored, or null when the car is in none.
 var _space: ScoredParkingSpace = null
@@ -107,6 +121,15 @@ func _ready() -> void:
 	_traffic.catalog = _catalog
 	_traffic.rng = _rng
 	add_child(_traffic)
+	_events = LotEvents.new()
+	_events.name = "LotEvents"
+	_events.catalog = _catalog
+	_events.traffic = _traffic
+	_events.rng = _rng
+	_events.enabled = lot_events_enabled
+	_events.car_leaving.connect(_on_car_leaving)
+	_events.rival_parked.connect(_on_rival_parked)
+	add_child(_events)
 	_start_round(false)
 
 
@@ -153,6 +176,10 @@ func end_round() -> void:
 	data.seconds_offroad = _offroad_seconds()
 	if car != null:
 		car.input_enabled = false
+	# The lot holds still while the card is up: a rival still creeping into a bay
+	# behind the score card would be the only thing moving on screen.
+	if _events != null:
+		_events.stop()
 	if _camera != null:
 		_camera.start_idle_rotation()
 	# The card first, then the reason. The HUD clears whatever banner was up when
@@ -173,6 +200,10 @@ func _start_round(advance: bool) -> void:
 	seconds_remaining = seconds_for_level(level)
 	_space = null
 	_occupied.clear()
+	# Before the bays are cleared and the lot refilled: every car that was
+	# driving itself belongs to the round that just ended.
+	if _events != null:
+		_events.reset()
 	for bay in _bays():
 		bay.clear()
 	for zone in _offroad_zones():
@@ -182,6 +213,9 @@ func _start_round(advance: bool) -> void:
 	# cleared of them first.
 	if _traffic != null:
 		_traffic.fill(_bays(), level * ParkingRules.VEHICLES_PER_LEVEL)
+	# Started on the lot the player is about to see, and only once it is full.
+	if _events != null:
+		_events.begin(_bays(), level, car, _entrance())
 	if _camera != null:
 		_camera.snap_to_default()
 	state = State.ACTIVE
@@ -315,6 +349,27 @@ func _on_bay_settled(_settled: PlayerCar, bay: ScoredParkingSpace) -> void:
 	if state != State.ACTIVE or bay != _space:
 		return
 	end_round()
+
+
+## Where cars come into the lot from. The player's own respawn marker, for want
+## of a better authority on which end of the lot is the front -- a lot that grew
+## a proper entrance marker would name it here.
+func _entrance() -> Vector3:
+	var markers := get_tree().get_nodes_in_group(PlayerCar.RESPAWN_GROUP)
+	if markers.is_empty():
+		return Vector3.INF
+	var marker := markers[0] as Node3D
+	return marker.global_position if marker != null else Vector3.INF
+
+
+func _on_car_leaving(_bay: ScoredParkingSpace) -> void:
+	# Worth saying out loud: it is a space that was not there when the round
+	# started, and the player is probably looking somewhere else.
+	message.emit(MESSAGE_CAR_LEAVING)
+
+
+func _on_rival_parked(_bay: ScoredParkingSpace) -> void:
+	message.emit(MESSAGE_SPACE_TAKEN)
 
 
 func _on_hit_obstacle(kind: Obstacle.Kind) -> void:

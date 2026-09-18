@@ -23,7 +23,13 @@ extends Node
 ## frozen where they land. That costs a second of physics at the start of a
 ## round and buys a car that is sitting on the road at exactly the height its
 ## own springs put it, rather than at a height this file would otherwise have to
-## know.
+## know -- and that height, written down per chassis, is what lets [LotEvents]
+## drive a car around the lot without simulating one.
+##
+## It owns the lot's furniture but not for the whole of a round. A car that
+## decides to leave is [method release]d into an [NpcDriver]'s hands and is that
+## driver's to free; a rival that parks itself is [method adopt]ed back. At any
+## moment exactly one node is responsible for each car in the lot.
 
 ## Parked cars join both: the round clears by the first, and [Obstacle] reports
 ## a collision by the second.
@@ -53,6 +59,16 @@ var _settling: Array[PlayerCar] = []
 var _settled_frames: Dictionary[PlayerCar, int] = {}
 var _last_position: Dictionary[PlayerCar, Vector3] = {}
 var _waited_frames: int = 0
+## Which bay each parked car is in. [LotEvents] asks, to send one of them home.
+var _bay_of: Dictionary[PlayerCar, ScoredParkingSpace] = {}
+## ...and which catalog entry it came from, so freezing it can be turned into a
+## measurement of that chassis.
+var _vehicle_of: Dictionary[PlayerCar, DrivableVehicle] = {}
+## How high above the tarmac each chassis sits once it has settled onto its own
+## suspension. Measured, kept for the life of the cabinet rather than the round,
+## and read by [LotEvents] -- a car driven rather than simulated has to be told
+## its own ride height, and this is the only place that ever learns it.
+var _ride_heights: Dictionary[DrivableVehicle, float] = {}
 
 
 func _ready() -> void:
@@ -92,12 +108,95 @@ func clear() -> void:
 	_settling.clear()
 	_settled_frames.clear()
 	_last_position.clear()
+	_bay_of.clear()
+	_vehicle_of.clear()
+	# _ride_heights is not cleared: it is what this spawner knows about a
+	# chassis, not what it did this round.
 	set_physics_process(false)
 
 
 ## The cars currently parked, for anything that wants to count them.
 func parked_cars() -> Array[PlayerCar]:
 	return _cars.duplicate()
+
+
+## Which bay [param car] is parked in, or null if this spawner did not park it.
+func bay_of(car: PlayerCar) -> ScoredParkingSpace:
+	return _bay_of.get(car)
+
+
+## How high [param vehicle]'s chassis sits above the tarmac, or a negative number
+## if no car of that chassis has settled yet.
+##
+## A car [NpcDriver] drives is moved rather than simulated, so something has to
+## know where the road is under it. Nothing here guesses: the number is the one a
+## car of that chassis settled to on its own springs, and a chassis that has
+## never been parked has no answer to give.
+func ride_height(vehicle: DrivableVehicle) -> float:
+	return _ride_heights.get(vehicle, -1.0)
+
+
+## Every chassis this spawner has measured a ride height for. The lot fills from
+## the catalog at the start of every round, so this is never empty by the time
+## anything asks.
+func measured_vehicles() -> Array[DrivableVehicle]:
+	var out: Array[DrivableVehicle] = []
+	for vehicle in _ride_heights:
+		out.append(vehicle)
+	return out
+
+
+## Builds one of the lot's cars without parking it: the player's chassis with
+## nobody in it, painted, out of the player's group and into the obstacle one.
+## The caller adds it to the tree and decides where it goes.
+func build(vehicle: DrivableVehicle) -> PlayerCar:
+	if vehicle == null:
+		return null
+	var car := vehicle.spawn()
+	if car == null:
+		return null
+	car.input_enabled = false
+	# Set before it enters the tree: this is what keeps it out of the player's
+	# group, and so out of every bay's measurements and the offroad clock.
+	car.driven_by_player = false
+	car.add_to_group(VEHICLE_GROUP)
+	car.add_to_group(Obstacle.GROUP)
+	_vehicle_of[car] = vehicle
+	_paint(car)
+	return car
+
+
+## Hands [param car] over to [param to] -- it is leaving, and this spawner is no
+## longer the thing that frees it.
+func release(car: PlayerCar, to: Node) -> void:
+	if not is_instance_valid(car):
+		return
+	_cars.erase(car)
+	_settling.erase(car)
+	_settled_frames.erase(car)
+	_last_position.erase(car)
+	_bay_of.erase(car)
+	_vehicle_of.erase(car)
+	if car.get_parent() != to:
+		car.reparent(to, true)
+
+
+## Takes [param car] on as the lot's furniture: it has parked itself in
+## [param bay] and is not going anywhere else.
+##
+## It is frozen static rather than left kinematic, which is the difference
+## between a parked car and a driven one: a static freeze is the cheap one, and
+## nothing is going to move this again.
+func adopt(car: PlayerCar, bay: ScoredParkingSpace) -> void:
+	if not is_instance_valid(car):
+		return
+	if car.get_parent() != self:
+		car.reparent(self, true)
+	if not _cars.has(car):
+		_cars.append(car)
+	_bay_of[car] = bay
+	car.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
+	_freeze(car)
 
 
 func _physics_process(_delta: float) -> void:
@@ -127,7 +226,7 @@ func _physics_process(_delta: float) -> void:
 ## is as legal here as nosing in, and a lot where every car faces the same way
 ## looks stamped out.
 func _park(bay: ScoredParkingSpace, vehicle: DrivableVehicle) -> void:
-	var car := vehicle.spawn()
+	var car := build(vehicle)
 	if car == null:
 		return
 	var axis := bay.global_basis.x
@@ -139,15 +238,9 @@ func _park(bay: ScoredParkingSpace, vehicle: DrivableVehicle) -> void:
 	var spot := bay.bay_centre()
 	spot.y = bay.global_position.y + 0.2
 	car.global_transform = Transform3D(Basis.looking_at(axis, Vector3.UP), spot)
-	car.input_enabled = false
-	# Set before it enters the tree: this is what keeps it out of the player's
-	# group, and so out of every bay's measurements and the offroad clock.
-	car.driven_by_player = false
-	car.add_to_group(VEHICLE_GROUP)
-	car.add_to_group(Obstacle.GROUP)
 	add_child(car)
 	car.global_transform = Transform3D(Basis.looking_at(axis, Vector3.UP), spot)
-	_paint(car)
+	_bay_of[car] = bay
 	_cars.append(car)
 	_settling.append(car)
 	_settled_frames[car] = 0
@@ -160,11 +253,24 @@ func _park(bay: ScoredParkingSpace, vehicle: DrivableVehicle) -> void:
 func _freeze(car: PlayerCar) -> void:
 	if not is_instance_valid(car):
 		return
+	_measure_ride_height(car)
 	car.linear_velocity = Vector3.ZERO
 	car.angular_velocity = Vector3.ZERO
 	car.freeze = true
 	car.set_process(false)
 	car.set_physics_process(false)
+
+
+## Writes down how high this chassis sits once it has stopped bouncing, which is
+## the one thing a car that is driven rather than simulated cannot work out for
+## itself. Measured against the bay's own ground level, so it is a property of
+## the car and not of where in the lot it happened to be parked.
+func _measure_ride_height(car: PlayerCar) -> void:
+	var vehicle: DrivableVehicle = _vehicle_of.get(car)
+	var bay: ScoredParkingSpace = _bay_of.get(car)
+	if vehicle == null or bay == null:
+		return
+	_ride_heights[vehicle] = car.global_position.y - bay.global_position.y
 
 
 ## Paints the bodywork, and only the bodywork.

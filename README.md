@@ -42,6 +42,11 @@ are already in this repo, so both cabinets share one set of vehicles. Picking th
 on vehicle select first — a carousel of cars turning on plates, in the San Francisco Rush shape —
 and confirming one starts the round in it. Adding a car to the carousel is a resource, not code.
 
+The lot does not hold still while you park in it. A parked car can back out and drive off, opening
+a space that was not there a moment ago; a rival can come in off the road and take one, as often as
+not the one you were lining up for. Both get likelier every level, so a later lot is a busier one
+rather than the same one with less time on the clock.
+
 [docs/parking-game.md](docs/parking-game.md) documents the game: the round, the grade table and
 where to tune it. [docs/parking-game-port.md](docs/parking-game-port.md) is the plan the port
 followed — what the source contained, which of its defects were fixed on the way across rather
@@ -177,8 +182,8 @@ which are published in `releases/godot-<version>.json` in
 
 Early prototype, with two cabinets playing. Cone Justice's core loop — throwing, scoring, target
 validation and the randomised street — plays end to end. The parking game plays its own loop end
-to end too: vehicle select, a graded round in a lot filling with parked cars, and levels that get
-shorter and fuller. Pedestrians and an end to the run are the two things the port left open.
+to end too: vehicle select, a graded round in a lot filling with parked cars, cars leaving and
+rivals arriving while you park, and levels that get shorter, fuller and busier. Pedestrians and an end to the run are the two things the port left open.
 
 ## Credits
 
