@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="PedestrianCatalog" format=3]
+
+[ext_resource type="Script" path="res://Scripts/ParkingGame/PedestrianCatalog.gd" id="1_catalog"]
+[ext_resource type="PackedScene" path="res://Scenes/ParkingGame/Pedestrian.tscn" id="2_person"]
+[ext_resource type="PackedScene" path="res://Scenes/ParkingGame/Goose.tscn" id="3_goose"]
+
+[resource]
+script = ExtResource("1_catalog")
+people = Array[PackedScene]([ExtResource("2_person")])
+wildlife = Array[PackedScene]([ExtResource("3_goose")])

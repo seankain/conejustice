@@ -226,7 +226,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.485014, -0.48720384, 4.29
 visible = false
 size = Vector3(17.380737, 1, 3.5899658)
 
-[node name="BuildingEntrance" type="Marker3D" parent="."]
+[node name="BuildingEntrance" type="Marker3D" parent="." groups=["building_entrance"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.669931, 0.58446145, -13.396349)
 
 [node name="KillPlane" type="Area3D" parent="."]

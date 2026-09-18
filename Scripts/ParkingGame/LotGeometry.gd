@@ -144,6 +144,15 @@ func clearance_point(bay: ScoredParkingSpace) -> Vector3:
 	return bay.bay_centre() + aisle_axis(bay) * BAY_CLEARANCE
 
 
+## The far side of the aisle from [param bay]: where something that walks out
+## in front of it ends up. Twice the lane offset out, which clears both driving
+## lanes and stops short of the paint on the other side -- so a crossing that
+## runs from [method clearance_point] to here crosses the whole roadway and
+## nothing else.
+func across_point(bay: ScoredParkingSpace) -> Vector3:
+	return bay.bay_centre() + aisle_axis(bay) * (LANE_OFFSET * 2.0)
+
+
 ## Where a car arriving for [param bay] leaves the lane and starts turning in:
 ## in the lane, [constant TURN_IN_LEAD] short of the bay.
 func turn_in_point(bay: ScoredParkingSpace) -> Vector3:

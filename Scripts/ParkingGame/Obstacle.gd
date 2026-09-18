@@ -20,11 +20,19 @@ const GROUP := &"obstacles"
 ## The method a node in [constant GROUP] must implement.
 const KIND_METHOD := &"obstacle_kind"
 
+## The method a node in [constant GROUP] may implement to be told it was hit,
+## and by what. Optional, unlike [constant KIND_METHOD]: a parked car has
+## nothing to do about being hit, and a [Pedestrian] falls over.
+##
+## [b]Called by the car that hit it[/b], in the frame the hit is scored, so
+## nothing can be both knocked down and still worth a grade.
+const STRUCK_METHOD := &"struck_by"
+
 enum Kind {
 	NONE, ## Not an obstacle. Scenery, the road, the lot's own static bodies.
 	VEHICLE, ## A parked car.
-	PERSON, ## A pedestrian.
-	WILDLIFE, ## Not in the lot yet; the source's enum has it and the grade maths counts it with people.
+	PERSON, ## Somebody on foot.
+	WILDLIFE, ## A goose. Costs the same as a person, and the score card counts the two together.
 	CURB,
 	TRAFFIC_CONTROL, ## Bollards, signs, cones.
 }

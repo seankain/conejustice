@@ -140,6 +140,9 @@ func _run() -> void:
 	_round = _main.get_node("Round") as ParkingRound
 	# Only the forced events, so the test measures what it asked for.
 	_round.lot_events_enabled = false
+	# ...and an empty lot underfoot: a car sent across it should be held up by
+	# the player and by nothing else.
+	_round.pedestrians_enabled = false
 	_events = _round.get_node("LotEvents") as LotEvents
 	_traffic = _round.get_node("Traffic") as TrafficSpawner
 	_hold_the_clock()

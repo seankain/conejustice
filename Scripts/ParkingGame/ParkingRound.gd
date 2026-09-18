@@ -50,10 +50,24 @@ const MESSAGE_FAILED := "FAILED TO PARK"
 ## ...and the two things the lot can do to you while it is running.
 const MESSAGE_CAR_LEAVING := "A CAR IS BACKING OUT"
 const MESSAGE_SPACE_TAKEN := "A RIVAL TOOK A SPACE"
+## ...and what it says when you forget the lot has people and geese in it.
+const MESSAGE_HIT_PERSON := "YOU HIT A PEDESTRIAN"
+const MESSAGE_HIT_WILDLIFE := "YOU HIT A GOOSE"
 
-## Pedestrians are the riskiest part of the port and the least load-bearing, so
-## the cabinet can open without them (T15).
-@export var pedestrians_enabled: bool = false
+## Whether anything lives in the lot: people walking in from their cars and
+## geese crossing the aisle ([PedestrianSpawner]). On, and every level has them.
+##
+## Off empties the lot of them and keeps it empty, which is what the round-flow
+## test wants while it measures a park -- the same job
+## [member lot_events_enabled] does for the cars.
+@export var pedestrians_enabled: bool = true:
+	set(value):
+		pedestrians_enabled = value
+		if _pedestrians == null:
+			return
+		_pedestrians.enabled = value
+		if not value:
+			_pedestrians.reset()
 
 ## Whether the lot does anything but hold still: cars leaving, rivals arriving
 ## ([LotEvents]). Off gives the source's lot, which fills once per level and then
@@ -76,10 +90,15 @@ var car: PlayerCar = null
 var _lot: Node3D = null
 var _vehicle: DrivableVehicle = null
 var _catalog: VehicleCatalog = null
+## The people and geese this lot can have in it. Null is a lot with nobody in
+## it, which is not an error.
+var _pedestrian_catalog: PedestrianCatalog = null
 var _camera_scene: PackedScene = null
 var _traffic: TrafficSpawner = null
 ## The lot's own traffic: what leaves, what turns up, and how likely either is.
 var _events: LotEvents = null
+## Everything in the lot that is on foot.
+var _pedestrians: PedestrianSpawner = null
 var _camera: ChaseCamera = null
 ## The bay being scored, or null when the car is in none.
 var _space: ScoredParkingSpace = null
@@ -101,11 +120,13 @@ func configure(
 		lot: Node3D,
 		vehicle: DrivableVehicle,
 		camera_scene: PackedScene,
-		catalog: VehicleCatalog = null) -> void:
+		catalog: VehicleCatalog = null,
+		pedestrians: PedestrianCatalog = null) -> void:
 	_lot = lot
 	_vehicle = vehicle
 	_camera_scene = camera_scene
 	_catalog = catalog
+	_pedestrian_catalog = pedestrians
 
 
 func _ready() -> void:
@@ -121,10 +142,17 @@ func _ready() -> void:
 	_traffic.catalog = _catalog
 	_traffic.rng = _rng
 	add_child(_traffic)
+	_pedestrians = PedestrianSpawner.new()
+	_pedestrians.name = "Pedestrians"
+	_pedestrians.catalog = _pedestrian_catalog
+	_pedestrians.rng = _rng
+	_pedestrians.enabled = pedestrians_enabled
+	add_child(_pedestrians)
 	_events = LotEvents.new()
 	_events.name = "LotEvents"
 	_events.catalog = _catalog
 	_events.traffic = _traffic
+	_events.pedestrians = _pedestrians
 	_events.rng = _rng
 	_events.enabled = lot_events_enabled
 	_events.car_leaving.connect(_on_car_leaving)
@@ -177,9 +205,12 @@ func end_round() -> void:
 	if car != null:
 		car.input_enabled = false
 	# The lot holds still while the card is up: a rival still creeping into a bay
-	# behind the score card would be the only thing moving on screen.
+	# behind the score card would be the only thing moving on screen, and so
+	# would a goose.
 	if _events != null:
 		_events.stop()
+	if _pedestrians != null:
+		_pedestrians.stop()
 	if _camera != null:
 		_camera.start_idle_rotation()
 	# The card first, then the reason. The HUD clears whatever banner was up when
@@ -201,9 +232,12 @@ func _start_round(advance: bool) -> void:
 	_space = null
 	_occupied.clear()
 	# Before the bays are cleared and the lot refilled: every car that was
-	# driving itself belongs to the round that just ended.
+	# driving itself, and everything that was walking, belongs to the round that
+	# just ended.
 	if _events != null:
 		_events.reset()
+	if _pedestrians != null:
+		_pedestrians.reset()
 	for bay in _bays():
 		bay.clear()
 	for zone in _offroad_zones():
@@ -216,6 +250,12 @@ func _start_round(advance: bool) -> void:
 	# Started on the lot the player is about to see, and only once it is full.
 	if _events != null:
 		_events.begin(_bays(), level, car, _entrance())
+	# After the events, because the lanes and aisle sides it walks people across
+	# are worked out once, by them, and handed on rather than computed twice.
+	if _pedestrians != null and _events != null:
+		_pedestrians.player = car
+		_pedestrians.begin(
+				_bays(), level, _events.lot_geometry(), _building_entrance())
 	if _camera != null:
 		_camera.snap_to_default()
 	state = State.ACTIVE
@@ -362,6 +402,16 @@ func _entrance() -> Vector3:
 	return marker.global_position if marker != null else Vector3.INF
 
 
+## Where anybody on foot in this lot is headed. Infinite when the lot has no
+## entrance marked, and a walk then ends at the lot's own gate instead.
+func _building_entrance() -> Vector3:
+	var markers := get_tree().get_nodes_in_group(PedestrianSpawner.DESTINATION_GROUP)
+	if markers.is_empty():
+		return Vector3.INF
+	var marker := markers[0] as Node3D
+	return marker.global_position if marker != null else Vector3.INF
+
+
 func _on_car_leaving(_bay: ScoredParkingSpace) -> void:
 	# Worth saying out loud: it is a space that was not there when the round
 	# started, and the player is probably looking somewhere else.
@@ -378,6 +428,12 @@ func _on_hit_obstacle(kind: Obstacle.Kind) -> void:
 	data.collisions.append(kind)
 	if car != null:
 		SfxPlayer.play_3d(SfxPlayer.Cue.CAR_IMPACT, car.global_position)
+	# Said out loud, because a body going over behind the camera is easy to miss
+	# and the score card is the only other place it shows up.
+	if kind == Obstacle.Kind.PERSON:
+		message.emit(MESSAGE_HIT_PERSON)
+	elif kind == Obstacle.Kind.WILDLIFE:
+		message.emit(MESSAGE_HIT_WILDLIFE)
 
 
 ## The player asked for a respawn, or the kill plane gave them one. Either way

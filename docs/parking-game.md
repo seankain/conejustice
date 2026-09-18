@@ -4,8 +4,8 @@ The second Parkade cabinet. Pick a car, drive it around a lot against a countdow
 it between the lines. The round is graded A to F on how square you are, how centred, what
 you crossed and what you hit. Park well and the next level gives you less time, more cars
 to park between, and more going on between them — spaces opening up as parked cars leave,
-and rivals driving in to take the one you were going for. Park badly and you run the same
-level again.
+rivals driving in to take the one you were going for, and people and geese crossing the
+aisle in front of you. Park badly and you run the same level again.
 
 It is a GDScript port of [ParkingThings](https://github.com/seankain/parkingthings/tree/main/ParkingThings),
 which is the same engine written in C# — and a .NET build does not run on the web at all.
@@ -166,8 +166,8 @@ godot --headless --script Tools/test_drive_chassis.gd -- res://Scenes/Vehicles/M
 ## The lot
 
 `Lot.tscn` is the source's level without the prototype's furniture: the parking lot model,
-the office building, road and grass bodies, a respawn marker, twenty bays, a navigation
-region for pedestrians that do not exist yet, a kill plane and an offroad zone.
+the office building, road and grass bodies, a respawn marker, twenty bays, the navigation
+region its pedestrians walk on, the marker they walk to, a kill plane and an offroad zone.
 
 `TrafficSpawner` fills `level × 2` bays from the same catalog the player picks out of,
 never filling the last one. Parked cars are the chassis the player drives with input off:
@@ -185,7 +185,7 @@ settles.
 ## What the lot does while you park
 
 The source's lot is filled once at the start of a level and then holds perfectly still,
-which makes its level twenty a level one with less time on it. `LotEvents` rolls two dice
+which makes its level twenty a level one with less time on it. `LotEvents` rolls three dice
 every `ParkingRules.RANDOM_EVENT_SECONDS`, and what they can do gets likelier every level:
 
 - **A car leaves.** One of the parked cars backs out of its bay, drives down the aisle and
@@ -193,13 +193,19 @@ every `ParkingRules.RANDOM_EVENT_SECONDS`, and what they can do gets likelier ev
   across the aisle while you are lining up somewhere else.
 - **A rival arrives.** A car comes in off the road looking for a space and takes one. Near
   the top of the lot, where there were two spaces left, it takes one of yours.
+- **Something living sets off across it.** Somebody gets out of a parked car and walks to
+  the building, or a gaggle of geese crosses the aisle — see
+  [What walks in front of you](#what-walks-in-front-of-you). This is the one roll that
+  only adds to what is already there: the lot starts every round with people on it.
 
 |  | Level 1 | Level 3 | Level 5 | Ceiling |
 |---|---|---|---|---|
 | a parked car leaves | 0.20 | 0.36 | 0.52 | 0.75 |
 | a rival arrives | 0.15 | 0.35 | 0.55 | 0.85 |
 | …and goes for the space nearest the player | 0.25 | 0.55 | 0.85 | 0.90 |
+| something living sets off across the lot | 0.30 | 0.50 | 0.70 | 0.80 |
 | cars under their own power at once | 1 | 2 | 3 | 3 |
+| living things walking at the start of a round | 2 | 4 | 6 | 6 |
 
 A round is five or six rolls long, so level one is about one car leaving per round and a
 rival every second round; from level eight it is both, most rolls, up to three at a time.
@@ -211,6 +217,69 @@ free space the rest of the time. Uniformly random is the honest choice and the b
 in a lot with eighteen free bays a rival takes one the player was never going to reach,
 and the event goes unnoticed. That fraction is the difference between a competitor and
 scenery, so it climbs with the rest.
+
+### What walks in front of you
+
+**Every level has people in it**, which is the one thing here that is not a die roll. The
+lot is populated the moment a round starts — `WALKERS_AT_LEVEL_ONE` of them, one more per
+level to a ceiling of six — and the roll above only decides whether *another* one sets off
+while you are already parking. A lot with nobody in it is a lot you can take at speed, and
+the whole point of a pedestrian is that you cannot.
+
+Two kinds, and they differ in where they go rather than only in what they look like:
+
+- **Somebody parked.** A person gets out of a car and walks to the building entrance,
+  which means crossing at least one driving lane to get there.
+- **A gaggle of geese.** Two to four of them cross the aisle together, from clear of one
+  row's paint to clear of the other's — so the line they walk has both driving lanes on it
+  and neither row's paint. They have nowhere to be and are in the way regardless.
+
+Hitting one costs a **full grade**, the same as hitting a car, and the score card counts
+them on their own row: `PERSON` and `WILDLIFE` are what `RoundData.collisions_of` adds up
+for **LIVING THINGS**. Hitting the same body twice costs once — a body on the tarmac
+leaves the `obstacles` group as it goes down, so carrying one along on your bumper is
+free. It stays where it fell until the round ends.
+
+**Where a crossing runs is read off the lot, not authored onto it**, the same way the
+lanes are: `LotGeometry.clearance_point` is just clear of a bay's paint,
+`LotGeometry.across_point` is twice the lane offset out, and a crossing between the two
+spans the aisle. A second lot costs no authoring for this beyond its bays and a
+`building_entrance` marker.
+
+Two things it does not do. It **does not path around parked cars** — the navigation mesh
+is baked from the empty lot, so a path can run through a bay a car is sitting in. A walker
+that stops making progress for `Pedestrian.STUCK_SECONDS` leaves rather than standing
+against a bumper for the rest of the round; the real fix is a `NavigationObstacle3D` per
+parked car. And the agents' **avoidance is off**, so a gaggle going the same way jostles.
+On a goose that reads as a goose.
+
+`ParkingRound.pedestrians_enabled` empties the lot of them and keeps it empty, the same
+way `lot_events_enabled` stills the cars.
+
+### The placeholder bodies
+
+**The meshes are a capsule and a box, and that is deliberate.** The source's pedestrian is
+a rigged human under the **Sketchfab Standard licence** — not one of the Creative Commons
+grants the lot and the office building carry — so it cannot be committed here until that
+is cleared (see [Not here yet](#not-here-yet)). What is here is the behaviour with a
+primitive standing in for the model, so landing the real one is a mesh swap rather than a
+design.
+
+A `Pedestrian` is one `RigidBody3D`. Walking, its two horizontal angular axes are locked
+and its velocity is written every physics step from a `NavigationAgent3D` path; struck,
+those locks come off and it is left to the solver with an impulse in it above its middle.
+**A single capsule going over end for end is the placeholder for a skeleton going limp,
+and it is deliberately the same switch** — the real version replaces what `knock_down`
+turns on, not when it is called. A real model brings its own `AnimationTree` for the walk
+and a `PhysicalBoneSimulator3D` for the fall; everything around it stays.
+
+It is dynamic the whole time, rather than frozen kinematic the way `NpcDriver`'s cars are.
+A frozen body has infinite mass, so a car hitting one would stop dead against it for the
+frame before anything could react — exactly wrong here. Seventy kilos should barely slow a
+car and should leave the lot at speed.
+
+Adding a species is a scene plus an entry in `Assets/Pedestrians/Catalog.tres`, the same
+way adding a car is a `DrivableVehicle`. No code knows how many there are.
 
 ### The cars that drive themselves
 
@@ -278,10 +347,12 @@ rather than drawn.
 
 | Where | What |
 |---|---|
-| `ParkingRules` | round length, the decrement per level and its floor, cars per level, the grade boundaries, the pass mark, and the odds of everything the lot does per level |
+| `ParkingRules` | round length, the decrement per level and its floor, cars per level, the grade boundaries, the pass mark, the odds of everything the lot does per level, and how many living things are on it |
 | `LotGeometry` | how far out the lanes run, where a car starts turning, where the gate is |
 | `NpcDriver` | how fast a car with nobody in it drives, how tightly it turns, how much room it leaves the player |
 | `DrivableVehicle` resources | mass, engine power, steering lock, top speed, per car |
+| `Pedestrian` | walk speed, how hard a car throws one, how long one keeps trying before it gives up |
+| `PedestrianCatalog` resource | which scenes a person and a goose are |
 | `ScoredParkingSpace` | settle speed and settle time |
 | `PlayerCar` | brake strength, idle brake, steering rate |
 | `ParkingHUD` | banner duration, the low-clock warning, and `show_debug` for the live measurements |
@@ -294,26 +365,30 @@ godot --headless --script Tools/test_bay_alignment.gd        the bays against th
 godot --headless --script Tools/test_drive_chassis.gd        a chassis on a flat plane
 godot --headless Tools/test_round_flow.tscn                  a whole round in the lot
 godot --headless Tools/test_lot_events.tscn                 a car leaving, a rival arriving, the odds
+godot --headless Tools/test_pedestrians.tscn                 a crossing, a knock-down, and what it costs
 godot --headless Tools/test_pause_flow.tscn -- round         Escape, pause, resume
 godot --headless Tools/test_pause_flow.tscn -- select        Escape with no menu in the way
 godot --headless Tools/test_audio_cues.tscn                  the cues and the engine note
 ```
 
-The last four are scenes rather than `--script` tools for a reason worth remembering: a
+The last five are scenes rather than `--script` tools for a reason worth remembering: a
 script run with `--script` replaces the main loop, so autoloads are never registered and
 any script naming `Parkade` or `SfxPlayer` fails to compile. Anything touching the shell,
 the round or the audio has to be tested by running a scene.
 
 ## Not here yet
 
-- **Pedestrians.** The source's ragdolling NPC is the riskiest part of it and the least
-  load-bearing. `ParkingRound.pedestrians_enabled` is the gate, off by default. Its mesh is a
-  free Sketchfab download under the **Sketchfab Standard licence** — which is not one of the
-  Creative Commons grants the lot and the office building carry: it asks for the author to be
-  credited and does not, on its face, grant redistribution of the model file itself. Shipping
-  it inside a build is what it is for; committing the raw mesh to a public repository is the
-  part to check against the licence text before it comes across, and the licence and the
-  credit belong beside it in `ThirdParty/` when it does.
+- **The real pedestrian models.** The lot has people and geese in it, but they are a
+  capsule and a box — see [The placeholder bodies](#the-placeholder-bodies). The source's
+  mesh is a free Sketchfab download under the **Sketchfab Standard licence**, which is not
+  one of the Creative Commons grants the lot and the office building carry: it asks for the
+  author to be credited and does not, on its face, grant redistribution of the model file
+  itself. Shipping it inside a build is what it is for; committing the raw mesh to a public
+  repository is the part to check against the licence text before it comes across, and the
+  licence and the credit belong beside it in `ThirdParty/` when it does. What comes with a
+  real model is an `AnimationTree` for the walk, a `PhysicalBoneSimulator3D` for the fall,
+  and a per-parked-car `NavigationObstacle3D` so a path stops running through a bay that is
+  full.
 - **An end to the run.** The source escalates forever, and so does this. An arcade cabinet
   probably wants a last level and a run-over screen.
 - **A remembered car.** The cabinet reloads from scratch each launch, so it always starts

@@ -44,19 +44,25 @@ and confirming one starts the round in it. Adding a car to the carousel is a res
 
 The lot does not hold still while you park in it. A parked car can back out and drive off, opening
 a space that was not there a moment ago; a rival can come in off the road and take one, as often as
-not the one you were lining up for. Both get likelier every level, so a later lot is a busier one
-rather than the same one with less time on the clock.
+not the one you were lining up for. People get out of their cars and walk to the building, and
+geese cross the aisle in a gaggle because it is there — hit one and it goes over, and it costs you
+a grade. All of it gets likelier every level, so a later lot is a busier one rather than the same
+one with less time on the clock.
 
 [docs/parking-game.md](docs/parking-game.md) documents the game: the round, the grade table and
 where to tune it. [docs/parking-game-port.md](docs/parking-game-port.md) is the plan the port
 followed — what the source contained, which of its defects were fixed on the way across rather
 than carried, and what is still outstanding.
 
-Pedestrians are not in it. They are the riskiest part of the source and the least load-bearing, and
-`ParkingRound.pedestrians_enabled` gates them off. Their mesh is a free Sketchfab download under the
-Sketchfab Standard licence rather than one of the Creative Commons grants the other models carry, so
-bringing it across means crediting the author and checking that licence about committing the mesh
-itself to a public repository — see [docs/parking-game-port.md](docs/parking-game-port.md).
+**The people and the geese are a capsule and a box.** The source's pedestrian mesh is a free
+Sketchfab download under the Sketchfab Standard licence rather than one of the Creative Commons
+grants the other models carry, so bringing it across means crediting the author and checking that
+licence about committing the mesh itself to a public repository — see
+[docs/parking-game-port.md](docs/parking-game-port.md). What shipped instead is the behaviour with
+a primitive standing in for the model: walking a navigation path, worth a full grade to hit, and
+going over when a car reaches it. A real model swaps the mesh in and brings an animator and a
+proper ragdoll with it; nothing around it changes. `ParkingRound.pedestrians_enabled` empties the
+lot of them, which is what the tests use.
 
 ## The shell
 
@@ -90,7 +96,7 @@ Scenes/          Cone Justice scenes — Main (its root), level, Cone, SUV, Tree
 Scenes/ParkingGame/  Parking game scenes — Main (its root)
 Scenes/Vehicles/ Drivable chassis, shared by whichever cabinet wants to drive one
 Scripts/         GDScript — Autoload/, Parkade/, Audio/, Camera/, Gameplay/, ParkingGame/, UI/
-Assets/          First-party assets (vehicle profiles, generated placeholder audio)
+Assets/          First-party assets (vehicle and pedestrian catalogs, generated placeholder audio)
 ThirdParty/      Third-party models and textures (cars, building, trees, skybox)
 Tools/           Asset generation scripts
 docs/            Design and implementation notes
@@ -183,7 +189,9 @@ which are published in `releases/godot-<version>.json` in
 Early prototype, with two cabinets playing. Cone Justice's core loop — throwing, scoring, target
 validation and the randomised street — plays end to end. The parking game plays its own loop end
 to end too: vehicle select, a graded round in a lot filling with parked cars, cars leaving and
-rivals arriving while you park, and levels that get shorter, fuller and busier. Pedestrians and an end to the run are the two things the port left open.
+rivals arriving while you park, people and geese crossing in front of you, and levels that get
+shorter, fuller and busier. An end to the run, and the licensed meshes to replace the placeholder
+pedestrians, are what the port left open.
 
 ## Credits
 

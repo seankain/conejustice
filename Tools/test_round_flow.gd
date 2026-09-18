@@ -95,6 +95,10 @@ func _run() -> void:
 	# bays it picked out several seconds earlier. Tools/test_lot_events.tscn is
 	# where that half is checked, by forcing it rather than waiting for it.
 	_round.lot_events_enabled = false
+	# Nothing walks in front of it either: a goose crossing the aisle while this
+	# test is reversing into a bay would be a collision the grade it is checking
+	# never asked for. Tools/test_pedestrians.tscn has that half.
+	_round.pedestrians_enabled = false
 
 	print("The lot at level 1")
 	var traffic := _round.get_node("Traffic") as TrafficSpawner

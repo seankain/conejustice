@@ -1,8 +1,8 @@
 class_name LotEvents
 extends Node
-## The lot with something going on in it: a parked car that decides to leave, and
-## rivals turning up for the same space you are going for. Both get likelier
-## every level.
+## The lot with something going on in it: a parked car that decides to leave,
+## rivals turning up for the same space you are going for, and something living
+## walking across in front of you. All three get likelier every level.
 ##
 ## Nothing in the source does this. Its lot is filled once per level and then
 ## holds still, and the only thing that moves is the player -- which makes a
@@ -16,6 +16,10 @@ extends Node
 ## - [b]A rival arrives.[/b] A car comes in off the road looking for a space, and
 ##   takes one. At the top of the lot, where there were two spaces left, it takes
 ##   one of yours.
+## - [b]Somebody walks out.[/b] A person gets out of a parked car and heads for
+##   the building, or a gaggle of geese crosses the aisle. Hitting one costs a
+##   grade, and unlike the other two this one is on the lot from the start of
+##   every round -- see [PedestrianSpawner].
 ##
 ## The odds of each, per roll, come from [ParkingRules]; the rolls themselves are
 ## [constant ParkingRules.RANDOM_EVENT_SECONDS] apart. The driving is
@@ -35,6 +39,9 @@ signal car_leaving(bay: ScoredParkingSpace)
 signal rival_arriving(bay: ScoredParkingSpace)
 ## ...and has parked in it. That space is gone.
 signal rival_parked(bay: ScoredParkingSpace)
+## Something living has started across the lot. [param bodies] is how many went,
+## because a gaggle is several at once.
+signal crossing_started(bodies: int)
 
 ## The cars a rival can turn up in -- the same catalog the player picks out of.
 var catalog: VehicleCatalog = null
@@ -42,6 +49,9 @@ var catalog: VehicleCatalog = null
 ## and a rival that parks is adopted by it, so at any moment exactly one node
 ## owns each car in the lot.
 var traffic: TrafficSpawner = null
+## Where the lot's people and geese come from. Null in a lot the round has
+## switched them off for, and the third roll is then never made.
+var pedestrians: PedestrianSpawner = null
 ## The round's generator, seeded once and shared, rather than one per system.
 var rng: RandomNumberGenerator = null
 ## Yielded to by every driver, and the thing a rival is racing.
@@ -120,9 +130,9 @@ func _process(delta: float) -> void:
 	_roll()
 
 
-## One roll of each of the lot's dice. Both can come up in the same roll, which
-## at the top of the table is most of what makes it feel like a car park rather
-## than a diagram.
+## One roll of each of the lot's dice. Any of them can come up in the same roll,
+## which at the top of the table is most of what makes it feel like a car park
+## rather than a diagram.
 func _roll() -> void:
 	if not enabled or rng == null:
 		return
@@ -130,6 +140,8 @@ func _roll() -> void:
 		start_departure()
 	if rng.randf() < ParkingRules.arrival_chance(_level):
 		start_arrival()
+	if rng.randf() < ParkingRules.walker_chance(_level):
+		start_crossing()
 
 
 ## Sends one of the parked cars home. Returns whether one went.
@@ -182,6 +194,19 @@ func start_arrival() -> bool:
 	return true
 
 
+## Sends somebody across the lot on foot. Returns whether anybody went.
+##
+## The policy is the spawner's -- whether it is a person or a gaggle, where they
+## start and where they are going. This decides only that it happens.
+func start_crossing() -> bool:
+	if pedestrians == null:
+		return false
+	var bodies := pedestrians.send_crossing()
+	if bodies > 0:
+		crossing_started.emit(bodies)
+	return bodies > 0
+
+
 ## Which bays have nothing in them: no parked car, no rival on its way, and not
 ## the one the player is sitting in.
 func free_bays() -> Array[ScoredParkingSpace]:
@@ -190,6 +215,14 @@ func free_bays() -> Array[ScoredParkingSpace]:
 		if _is_free(bay):
 			free.append(bay)
 	return free
+
+
+## The lanes, gates and aisle sides this round is being played on. Built by
+## [method begin] from the bays it was handed, and read by anything else that has
+## to know where the aisle is -- [PedestrianSpawner], for one. Null before the
+## first round starts.
+func lot_geometry() -> LotGeometry:
+	return _geometry
 
 
 ## The same, for a rival that is allowed to be standing in one of them itself.
