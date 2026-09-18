@@ -116,6 +116,9 @@ var input_enabled: bool = true:
 
 var _wheels: Array[VehicleWheel3D] = []
 var _wheel_visuals: Array[Node3D] = []
+## How far each wheel has rolled, in radians. Only a car nobody is simulating
+## keeps this -- see [method roll_wheel_visuals].
+var _wheel_spin := PackedFloat32Array()
 
 
 func _ready() -> void:
@@ -147,6 +150,8 @@ func _bind_wheel_visuals() -> void:
 			continue
 		_wheels.append(child)
 		_wheel_visuals.append(visual)
+	_wheel_spin.resize(_wheels.size())
+	_wheel_spin.fill(0.0)
 
 
 func _physics_process(delta: float) -> void:
@@ -226,8 +231,38 @@ func _follow_wheels() -> void:
 		_wheel_visuals[i].transform = _wheels[i].transform
 
 
+## Rolls and steers the wheel visuals of a car that is not being simulated.
+##
+## [method _follow_wheels] reads the wheels the physics engine moves. A frozen
+## car has none: its [VehicleWheel3D]s stay where they stopped, so a car an
+## [NpcDriver] slides across the lot arrives with its wheels pointing straight
+## ahead and never turning, which reads as a car on ice. This puts the same
+## transform together from the outside -- [param distance] is how far the car
+## travelled this frame, negative when it is reversing, and [param steer_angle]
+## is where the front wheels are pointing, in radians.
+##
+## The wheel pivots are bare, and the meshes under them keep their own scale and
+## their mirrored basis, which is why the whole transform can be rebuilt here and
+## the left-hand wheels still look right.
+func roll_wheel_visuals(distance: float, steer_angle: float) -> void:
+	for i in _wheels.size():
+		var wheel := _wheels[i]
+		var spin := wrapf(
+				_wheel_spin[i] + distance / maxf(wheel.wheel_radius, 0.05), -TAU, TAU)
+		_wheel_spin[i] = spin
+		var yaw := steer_angle if wheel.use_as_steering else 0.0
+		# Rolling forward is -Z, and the axle is X, so a wheel going the way the
+		# car calls forward turns the negative way about it.
+		_wheel_visuals[i].transform = Transform3D(
+				Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, -spin), wheel.position)
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if not input_enabled:
+	# Both halves matter. The round switches input off while it grades; and a
+	# parked car or one an [NpcDriver] is driving is this same scene, so without
+	# the second test the player's restart key would teleport the whole lot onto
+	# the respawn marker.
+	if not input_enabled or not driven_by_player:
 		return
 	if event.is_action_pressed(&"restart"):
 		respawn()

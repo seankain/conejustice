@@ -90,6 +90,11 @@ func _run() -> void:
 	(_main.get_node("VehicleSelect") as VehicleSelect).confirm()
 	await _wait(4.0)
 	_round = _main.get_node("Round") as ParkingRound
+	# The lot holds still for this one. What it does on its own -- cars leaving,
+	# rivals arriving -- is a die roll every ten seconds, and this test parks in
+	# bays it picked out several seconds earlier. Tools/test_lot_events.tscn is
+	# where that half is checked, by forcing it rather than waiting for it.
+	_round.lot_events_enabled = false
 
 	print("The lot at level 1")
 	var traffic := _round.get_node("Traffic") as TrafficSpawner

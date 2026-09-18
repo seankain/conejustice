@@ -145,11 +145,15 @@ func bay_centre() -> Vector3:
 
 
 ## Whether one of the lot's parked cars is already in this bay. Read before a
-## round fills the lot, so two cars never share a bay, and by the pedestrian
-## spawner to find a car to climb out of.
-func has_parked_car() -> bool:
+## round fills the lot, so two cars never share a bay, and by [LotEvents] to find
+## the spaces still going.
+##
+## [param except_car] is left out of the answer, for the one caller that is a car
+## in a bay asking whether anybody [i]else[/i] is in it -- a rival parking itself
+## would otherwise find the space taken the moment it drove into it.
+func has_parked_car(except_car: Node3D = null) -> bool:
 	for body in bay.get_overlapping_bodies():
-		if body.is_in_group(&"npc_vehicles"):
+		if body != except_car and body.is_in_group(&"npc_vehicles"):
 			return true
 	return false
 
