@@ -18,7 +18,7 @@ var title: String
 var tagline: String
 ## The control scheme, shown dimmer under the tagline.
 var controls: String
-## Scene handed to [method SceneTree.change_scene_to_file].
+## The game's root scene. [LoadingScreen] loads it and the shell swaps it in.
 var scene_path: String
 ## False while a game is still being built. The menu lists it, greyed, so the
 ## cabinet is visibly on its way rather than absent.
