@@ -50,7 +50,8 @@ signal player_settled(car: PlayerCar)
 ## The painted line on each side. Sitting on one costs a grade.
 @export var left_line: Area3D
 @export var right_line: Area3D
-## Where a pedestrian climbs out of a car parked here (T15).
+## Where somebody climbs out of a car parked here. Only its distance from the
+## bay is read -- see [method door_distance].
 @export var npc_spawn_point: Node3D
 
 @export_group("Settling")
@@ -156,6 +157,21 @@ func has_parked_car(except_car: Node3D = null) -> bool:
 		if body != except_car and body.is_in_group(&"npc_vehicles"):
 			return true
 	return false
+
+
+## How far out of the bay somebody getting out of a car here stands, in metres.
+## Zero when the bay has no marker for it.
+##
+## [b]Which side the marker is on is not part of the answer.[/b] Every bay in a
+## lot is the same scene, so the marker sits on the same local side of all of
+## them -- which is the aisle for one row of bays and the kerb for the other.
+## How far the door is belongs to the bay; which way is out belongs to
+## [LotGeometry].
+func door_distance() -> float:
+	if npc_spawn_point == null:
+		return 0.0
+	var offset := npc_spawn_point.global_position - bay_centre()
+	return Vector2(offset.x, offset.z).length()
 
 
 ## Forgets the player and stops measuring. Called when a round ends, so a bay

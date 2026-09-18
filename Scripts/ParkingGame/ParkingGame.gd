@@ -29,6 +29,9 @@ enum State {
 ## Every car the cabinet offers, in carousel order. The round starts in the
 ## first one when nothing was picked.
 @export var catalog: VehicleCatalog
+## The people and geese the lot is populated with. Unset is a lot with nobody
+## walking across it, which is a lot easier to park in.
+@export var pedestrian_catalog: PedestrianCatalog
 ## The carousel (T10). Unset skips selection and plays the default car, which is
 ## what the cabinet does until that screen exists.
 @export var vehicle_select_scene: PackedScene
@@ -124,7 +127,8 @@ func _enter_play() -> void:
 		add_child(hud)
 	current_round = ParkingRound.new()
 	current_round.name = "Round"
-	current_round.configure(_lot, _chosen_vehicle, chase_camera_scene, catalog)
+	current_round.configure(
+			_lot, _chosen_vehicle, chase_camera_scene, catalog, pedestrian_catalog)
 	if hud != null:
 		# Handed the round rather than going looking for it: the source's HUD
 		# resolves /root/Main/Level every frame.

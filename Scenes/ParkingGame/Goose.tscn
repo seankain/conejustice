@@ -1,0 +1,36 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://Scripts/ParkingGame/Pedestrian.gd" id="1_pedestrian"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_goose"]
+size = Vector3(0.38, 0.5, 0.85)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_goose"]
+albedo_color = Color(0.88, 0.87, 0.82, 1)
+roughness = 0.95
+
+[sub_resource type="BoxMesh" id="BoxMesh_goose"]
+material = SubResource("StandardMaterial3D_goose")
+size = Vector3(0.38, 0.5, 0.85)
+
+[node name="Goose" type="RigidBody3D" node_paths=PackedStringArray("agent")]
+mass = 5.5
+script = ExtResource("1_pedestrian")
+species = 1
+walk_speed = 0.85
+turn_speed = 4.0
+agent = NodePath("NavigationAgent3D")
+
+[node name="Shape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+shape = SubResource("BoxShape3D_goose")
+
+[node name="Placeholder" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+mesh = SubResource("BoxMesh_goose")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 0.5
+target_desired_distance = 0.7
+radius = 0.35
+height = 0.5

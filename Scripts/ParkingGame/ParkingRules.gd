@@ -22,9 +22,10 @@ const SECONDS_PER_LEVEL := 5.0
 ## level 1 onwards.
 const VEHICLES_PER_LEVEL := 2
 ## Seconds between rolls of the lot's dice: whether a parked car backs out and
-## leaves, and whether a rival turns up for a space ([LotEvents]). The source
-## keeps the same constant for a pedestrian climbing out of a car (T15), which is
-## the same clock and would be the third roll on it.
+## leaves, whether a rival turns up for a space, and whether anything living
+## walks out in front of you ([LotEvents]). The source keeps the same constant
+## for a pedestrian climbing out of a car, which is where the third roll came
+## from.
 const RANDOM_EVENT_SECONDS := 10.0
 ## Seconds the round holds on the score card before the next one starts.
 const ROUND_OVER_SECONDS := 5.0
@@ -70,6 +71,31 @@ const RIVAL_FOCUS_CHANCE := 0.25
 const RIVAL_FOCUS_PER_LEVEL := 0.15
 const RIVAL_FOCUS_MAX := 0.9
 
+## How many living things are already crossing the lot when a round starts, how
+## many more each level adds, and the most that may be walking at once.
+##
+## [b]Every level has them[/b], which is the difference between this and the two
+## dice above: a lot with nobody in it is a lot you can take at speed, and the
+## whole point of a pedestrian is that you cannot. What the levels add is how
+## many of them there are, and how often another one steps out while you are
+## already parking.
+const WALKERS_AT_LEVEL_ONE := 2
+const WALKERS_PER_LEVEL := 1
+const WALKERS_MAX := 6
+
+## The chance, per roll, that another crossing starts mid-round.
+const WALKER_CHANCE := 0.30
+const WALKER_CHANCE_PER_LEVEL := 0.10
+const WALKER_CHANCE_MAX := 0.80
+
+## The chance a crossing is wildlife rather than somebody on foot, and how many
+## geese a gaggle is. A gaggle counts as several of [constant WALKERS_MAX], so
+## wildlife fills the lot faster than people do -- which is the point of a
+## goose.
+const WILDLIFE_CHANCE := 0.35
+const GAGGLE_MIN := 2
+const GAGGLE_MAX := 4
+
 ## How many cars may be driving themselves around the lot at once, at level one,
 ## and how many levels buy another one.
 ##
@@ -94,6 +120,17 @@ static func arrival_chance(level: int) -> float:
 ## The chance a rival at [param level] goes for the space the player is nearest.
 static func rival_focus_chance(level: int) -> float:
 	return _chance(RIVAL_FOCUS_CHANCE, RIVAL_FOCUS_PER_LEVEL, RIVAL_FOCUS_MAX, level)
+
+
+## How many living things a round at [param level] starts with.
+static func walkers_for_level(level: int) -> int:
+	var extra := maxi(level, 1) - 1
+	return clampi(WALKERS_AT_LEVEL_ONE + extra * WALKERS_PER_LEVEL, 0, WALKERS_MAX)
+
+
+## The chance, per roll, of another crossing starting at [param level].
+static func walker_chance(level: int) -> float:
+	return _chance(WALKER_CHANCE, WALKER_CHANCE_PER_LEVEL, WALKER_CHANCE_MAX, level)
 
 
 ## How many cars may be driving themselves at [param level].

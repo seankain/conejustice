@@ -30,7 +30,7 @@ Version ported from: `seankain/parkingthings@main`, Godot 4.6, C#, GL Compatibil
 | `Scripts/ParkingSpaceArea.cs` | Entry/exit detection, "is a car already here" | folded into `ScoredParkingSpace.gd` |
 | `Scripts/Spawner.cs` | Instances and frees NPC cars and pedestrians | `TrafficSpawner.gd` |
 | `Scripts/NpcCar.cs` | Parked NPC car, random paint | `ParkedCar.gd` |
-| `Scenes/MobileNpc.cs` | Navigating pedestrian, ragdolls when hit | `Pedestrian.gd` |
+| `Scenes/MobileNpc.cs` | Navigating pedestrian, ragdolls when hit | `Pedestrian.gd`, `PedestrianSpawner.gd` |
 | `Scripts/OffroadArea.cs` | Accumulates time spent off the tarmac | `OffroadZone.gd` |
 | `Scripts/KillPlane.cs` | Respawns a car that fell out of the world | `KillPlane.gd` |
 | `Scripts/IObstacleType.cs` | Marker interface for "what did I just hit" | `Obstacle.gd` (enum + group) |
@@ -219,7 +219,7 @@ it would make of the car pack already under `ThirdParty/` — stays out entirely
 | --- | --- | --- | --- |
 | `Models/auzrea_parking_final/` (glTF + textures) | 256 KB | the lot itself | imported as `ThirdParty/Models/ParkingLot/` |
 | `Models/low_rise_wall_to_wall_office_building/` | 1.2 MB | the building the pedestrians walk to | imported as `ThirdParty/Models/OfficeBuilding/` |
-| `Models/Npcs/` (`.res` mesh + `WalkPhone.res` + texture) | 4.5 MB | the pedestrian (T15 only) | **not imported** — Sketchfab Standard licence, see below |
+| `Models/Npcs/` (`.res` mesh + `WalkPhone.res` + texture) | 4.5 MB | the pedestrian's real mesh (T15) | **not imported** — Sketchfab Standard licence, see below; T15 shipped on a capsule instead |
 | `UI/Fonts/BasicHandwriting.ttf`, `ThreeDimRightwardsRound.ttf` | 71 KB | the HUD | **not imported** — unlicensed, see below |
 
 That is ~1.5 MB against a repo that already carries 116 MB under `ThirdParty/`, and ~6 MB if the
@@ -472,7 +472,7 @@ runs across scene changes and needs nothing. New clips follow
 
 **Done when:** the game is audible and the Music/SFX buses behave as they do in Cone Justice.
 
-### T15 — Pedestrians and ragdolls *(optional, gated)*
+### T15 — Pedestrians and ragdolls
 **Depends on:** T11 · **Size:** L
 
 The highest-risk part of the source and the least load-bearing. `HumanNpc.tscn` is 100 KB of
@@ -481,11 +481,40 @@ the whole thing exists to be knocked over by the player. It needs the baked navi
 T6, the animation library, and it is the one part of the port whose physics behaviour on the GL
 Compatibility web build is unknown.
 
-Ship it behind `@export var pedestrians_enabled := false` on `ParkingRound` so the cabinet can go
-live without it. `LookAt` on a zero-length or vertical direction errors — guard both.
+Ship it behind `@export var pedestrians_enabled` on `ParkingRound` so the cabinet can go live
+without it. `LookAt` on a zero-length or vertical direction errors — guard both.
 
 **Done when:** a pedestrian walks from a space to the building entrance, ragdolls on contact with
 the player, is cleaned up on round reset, and the web build holds frame rate with several active.
+
+**Shipped without the mesh.** The rigged human is still blocked on its licence (see
+[Assets](#assets)), so what landed is the behaviour with a primitive standing in for the model: a
+capsule for a person, a box for a goose. `Pedestrian.gd` walks a `NavigationAgent3D` path, is worth
+a full grade to hit, and goes over when a car reaches it; `PedestrianSpawner.gd` runs the crossings
+and clears them between rounds. Every level has them rather than only a level that rolled for one —
+the roll `LotEvents` makes is the *third* die on the existing clock, for one more mid-round, which
+is what `ParkingRules.RANDOM_EVENT_SECONDS` always said it was for.
+
+Three decisions worth writing down, because the real model inherits them:
+
+- **The ragdoll is a switch, not a mesh.** Walking, the body's two horizontal angular axes are
+  locked and its velocity is written each physics step; struck, the locks come off and an impulse
+  above its middle takes it over. A `PhysicalBoneSimulator3D` replaces what `knock_down` turns on,
+  not when it is called.
+- **The body is dynamic throughout**, not frozen kinematic the way `NpcDriver`'s cars are. A frozen
+  body has infinite mass, so a car would stop dead against one for the frame before anything could
+  react.
+- **A body leaves the `obstacles` group as it goes down**, so hitting the same one twice costs once.
+  `Obstacle.STRUCK_METHOD` is how the car tells it, in the frame the hit is scored.
+
+`pedestrians_enabled` now defaults **on**, and what it gates is an empty lot for the round-flow and
+lot-events tests rather than a cabinet that can open without the feature.
+
+Outstanding, and waiting on the real model: the navigation mesh is baked from the empty lot, so a
+path can run through a bay a car is parked in. A walker that stops making progress leaves rather
+than leaning on a bumper; the fix is a `NavigationObstacle3D` per parked car. Agent avoidance is
+off, so a gaggle jostles. And the web build's frame rate with several active is still the one thing
+a container cannot measure — see T16.
 
 ### T16 — Web export and performance
 **Depends on:** T14 · **Size:** M
@@ -539,7 +568,7 @@ tagline and control hints against what shipped, update the README, and add a
 T1 ─ T2 ─ T3 ─┬─ T4 ─────────────────┐
               ├─ T5                  │
               └─ T6 ─ T7 ─ T8 ─ T9 ─┬┴─ T10 ─────────────┐
-                                    ├─ T11 ─ T15 (opt.)  │
+                                    ├─ T11 ─ T15         │
                                     └─ T12 ─ T13 ─ T14 ─ T16 ─ T17
 ```
 

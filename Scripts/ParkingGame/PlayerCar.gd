@@ -301,3 +301,11 @@ func _on_body_entered(body: Node) -> void:
 	if kind == Obstacle.Kind.NONE:
 		return
 	hit_obstacle.emit(kind)
+	# ...and tell it, if it is the kind of thing that has something to do about
+	# being hit. A [Pedestrian] falls over here, in the same frame the hit is
+	# scored, so nothing is ever both down and still worth a grade. Every car in
+	# the lot runs this, the player's and the ones an [NpcDriver] is driving --
+	# a goose knocked over by a car with nobody in it costs the player nothing,
+	# because nothing is listening to that car.
+	if body.has_method(Obstacle.STRUCK_METHOD):
+		body.call(Obstacle.STRUCK_METHOD, self)

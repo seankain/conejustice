@@ -1,0 +1,37 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://Scripts/ParkingGame/Pedestrian.gd" id="1_pedestrian"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_person"]
+radius = 0.3
+height = 1.75
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_person"]
+albedo_color = Color(0.32, 0.45, 0.62, 1)
+roughness = 0.9
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_person"]
+material = SubResource("StandardMaterial3D_person")
+radius = 0.3
+height = 1.75
+
+[node name="Pedestrian" type="RigidBody3D" node_paths=PackedStringArray("agent")]
+mass = 72.0
+script = ExtResource("1_pedestrian")
+species = 0
+walk_speed = 1.4
+agent = NodePath("NavigationAgent3D")
+
+[node name="Shape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.875, 0)
+shape = SubResource("CapsuleShape3D_person")
+
+[node name="Placeholder" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.875, 0)
+mesh = SubResource("CapsuleMesh_person")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 0.6
+target_desired_distance = 0.8
+radius = 0.4
+height = 1.75

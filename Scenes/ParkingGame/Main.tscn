@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://Scripts/ParkingGame/ParkingGame.gd" id="1_parking_game"]
 [ext_resource type="Resource" path="res://Assets/Vehicles/Drivable/Catalog.tres" id="2_catalog"]
@@ -7,10 +7,12 @@
 [ext_resource type="PackedScene" path="res://Scenes/ParkingGame/UI/ParkingHUD.tscn" id="5_hud"]
 [ext_resource type="PackedScene" path="res://Scenes/ParkingGame/VehicleSelect.tscn" id="6_select"]
 [ext_resource type="PackedScene" path="res://Scenes/ParkingGame/UI/PauseMenu.tscn" id="7_pause"]
+[ext_resource type="Resource" path="res://Assets/Pedestrians/Catalog.tres" id="8_pedestrians"]
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_parking_game")
 catalog = ExtResource("2_catalog")
+pedestrian_catalog = ExtResource("8_pedestrians")
 lot_scene = ExtResource("3_lot")
 chase_camera_scene = ExtResource("4_chase_camera")
 hud_scene = ExtResource("5_hud")
