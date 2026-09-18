@@ -76,6 +76,21 @@ cursor on the way through, so nothing a game did to either can leak into the nex
 handles **Escape** as *unhandled* input, which means a game that wants Escape for its own pause
 menu simply consumes it first.
 
+**Picking a cabinet goes through a loading screen.** A game's scene brings its whole level with it,
+which is a second or more of reading in a browser, and swapping straight to it spends that second
+with the menu still on screen and the button still lit — a button that did nothing, as far as the
+player can tell. `Parkade.launch()` puts `Scenes/Parkade/LoadingScreen.tscn` up instead; it names
+the cabinet that is coming and shows its controls to read while it waits, then hands the loaded
+scene back to the shell. Where the build has threads the scene loads on one and the screen draws a
+progress bar. The web build has none — `variant/thread_support=false` in the export preset, and
+turning it on would need the COOP/COEP headers GitHub Pages cannot serve — so there the load blocks
+the frame it runs in. What the screen guarantees on both is that the load starts only after it has
+been *drawn*, so the wait happens under the loading screen rather than under a frozen menu.
+
+```sh
+godot --headless Tools/test_loading_screen.tscn   # both ways of loading, end to end
+```
+
 The `GameState` and `EventBus` autoloads are Cone Justice's alone — a second game gets its own
 state rather than widening those. `SfxPlayer` and `MusicPlayer` are shared, and the music keeps
 playing across cabinets.
@@ -91,7 +106,7 @@ playing across cabinets.
 ## Project layout
 
 ```
-Scenes/Parkade/  The arcade menu — MainMenu, the project's main scene
+Scenes/Parkade/  The arcade shell — MainMenu (the project's main scene) and LoadingScreen
 Scenes/          Cone Justice scenes — Main (its root), level, Cone, SUV, Tree1, UI/
 Scenes/ParkingGame/  Parking game scenes — Main (its root)
 Scenes/Vehicles/ Drivable chassis, shared by whichever cabinet wants to drive one
