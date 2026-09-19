@@ -156,12 +156,12 @@ godot --headless --script Tools/test_drive_chassis.gd
 godot --headless --script Tools/test_drive_chassis.gd -- res://Scenes/Vehicles/MinivanDrivable.tscn
 ```
 
-| | SUV | Minivan |
-|---|---|---|
-| Mass | 1400 kg | 1850 kg |
-| 0–10 m/s | 3.6 s | 6.0 s |
-| Stopping | 12.7 m/s in 1.7 s | 11.2 m/s in 1.9 s |
-| Lean at full lock | 2.2° | 1.2° |
+| | SUV | Minivan | Sedan |
+|---|---|---|---|
+| Mass | 1400 kg | 1850 kg | 1250 kg |
+| 0–10 m/s | 3.6 s | 6.0 s | 2.4 s |
+| Stopping | 12.7 m/s in 1.7 s | 11.2 m/s in 1.9 s | 13.8 m/s in 1.7 s |
+| Lean at full lock | 2.2° | 1.2° | 2.5° |
 
 ## The lot
 

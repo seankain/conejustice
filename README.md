@@ -37,10 +37,11 @@ which is the same engine but written in C# — and a .NET build does not run on 
 a car around a lot against a countdown and park it between the lines; the round is graded A to F on
 your angle, how centred you are, whether you crossed a line and what you hit on the way in.
 
-It drives Cone Justice's cars: the source's placeholder is a box, and the SUV and minivan meshes
-are already in this repo, so both cabinets share one set of vehicles. Picking the cabinet lands you
-on vehicle select first — a carousel of cars turning on plates, in the San Francisco Rush shape —
-and confirming one starts the round in it. Adding a car to the carousel is a resource, not code.
+It drives Cone Justice's cars: the source's placeholder is a box, and the SUV, minivan and sedan
+meshes are already in this repo, so both cabinets share one set of vehicles. Picking the cabinet
+lands you on vehicle select first — a carousel of cars turning on plates, in the San Francisco Rush
+shape — and confirming one starts the round in it. Adding a car to the carousel is a resource, not
+code.
 
 The lot does not hold still while you park in it. A parked car can back out and drive off, opening
 a space that was not there a moment ago; a rival can come in off the road and take one, as often as
