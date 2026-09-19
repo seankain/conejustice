@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://5j3fdf85unb4"]
+
+[ext_resource type="Texture2D" uid="uid://bw3yad8axglj2" path="res://ThirdParty/Models/GenericPassengerCarsPack/SedanBakedDiffuse.png" id="1_icoq1"]
+
+[resource]
+resource_name = "Body.001"
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_icoq1")
+emission_enabled = true
+emission_energy_multiplier = 0.0
