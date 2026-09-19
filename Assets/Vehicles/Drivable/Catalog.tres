@@ -4,7 +4,8 @@
 [ext_resource type="Script" path="res://Scripts/ParkingGame/DrivableVehicle.gd" id="2_h4wy6"]
 [ext_resource type="Resource" path="res://Assets/Vehicles/Drivable/Suv.tres" id="3_7nmqf"]
 [ext_resource type="Resource" path="res://Assets/Vehicles/Drivable/Minivan.tres" id="4_28i2t"]
+[ext_resource type="Resource" path="res://Assets/Vehicles/Drivable/Sedan.tres" id="5_sedan"]
 
 [resource]
 script = ExtResource("1_13lrq")
-vehicles = Array[ExtResource("2_h4wy6")]([ExtResource("3_7nmqf"), ExtResource("4_28i2t")])
+vehicles = Array[ExtResource("2_h4wy6")]([ExtResource("3_7nmqf"), ExtResource("4_28i2t"), ExtResource("5_sedan")])

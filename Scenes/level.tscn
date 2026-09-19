@@ -10,6 +10,7 @@
 [ext_resource type="Script" uid="uid://brvd6tggu4aq1" path="res://Scripts/Camera/CameraStop.gd" id="7_stop"]
 [ext_resource type="Script" uid="uid://cnx5e6sg4emqx" path="res://Scripts/Gameplay/ParkingLot.gd" id="8_lot"]
 [ext_resource type="Script" uid="uid://qrm0ujkyu57w" path="res://Scripts/Gameplay/ParkingSpace.gd" id="9_bay"]
+[ext_resource type="Resource" path="res://Assets/Vehicles/Sedan.tres" id="10_sedan"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_0b4ue"]
 panorama = ExtResource("1_k5f4k")
@@ -62,7 +63,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.579258, 0, -22.677265)
 
 [node name="ParkingLot" type="Node3D" parent="." unique_id=413662367]
 script = ExtResource("8_lot")
-vehicles = Array[ExtResource("5_oqgf2")]([ExtResource("4_suv"), ExtResource("7_qxfql")])
+vehicles = Array[ExtResource("5_oqgf2")]([ExtResource("4_suv"), ExtResource("7_qxfql"), ExtResource("10_sedan")])
 
 [node name="Bay0" type="Marker3D" parent="ParkingLot" unique_id=83087912]
 transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -24, 0.0486287, 9)

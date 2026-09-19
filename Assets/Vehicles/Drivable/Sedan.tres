@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="DrivableVehicle" format=3]
+
+[ext_resource type="PackedScene" path="res://Scenes/Vehicles/SedanDrivable.tscn" id="1_sedan"]
+[ext_resource type="Script" path="res://Scripts/ParkingGame/DrivableVehicle.gd" id="2_sedan"]
+
+[resource]
+script = ExtResource("2_sedan")
+display_name = "SEDAN"
+chassis = ExtResource("1_sedan")
+mass = 1250.0
+engine_power = 2300.0
+max_steer = 0.58
+top_speed = 17.0

@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="VehicleProfile" format=3]
+
+[ext_resource type="Script" uid="uid://bvv45qviv5tay" path="res://Scripts/Gameplay/VehicleProfile.gd" id="1_profile"]
+[ext_resource type="PackedScene" uid="uid://dvkbd68i7px2u" path="res://Scenes/Sedan.tscn" id="2_sedan"]
+
+[resource]
+script = ExtResource("1_profile")
+scene = ExtResource("2_sedan")
+footprint = Vector2(2.12, 4.77)
+bay_height_offset = -0.005
