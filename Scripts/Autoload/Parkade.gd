@@ -53,7 +53,7 @@ func _ready() -> void:
 				&"parking_game",
 				"PARKING GAME",
 				"Beat the clock, find a space, and put it between the lines.",
-				"WASD  drive      MOUSE  look      R  start over      ESC  pause",
+				"WASD  drive      SHIFT  boost      SPACE  e-brake      MOUSE  look      R  start over      ESC  pause",
 				"res://Scenes/ParkingGame/Main.tscn"),
 	]
 

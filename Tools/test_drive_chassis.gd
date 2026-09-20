@@ -38,6 +38,16 @@ const MAX_REST_SAG := 0.12
 ## measured over the first stretch of the turn. Loose on purpose: this asks
 ## which way the car went, not how tight its circle is.
 const MIN_TURN_OFFSET := 0.5
+## How far the engine force under boost may sit from the force under the drive
+## key, as a fraction of the car's own engine power. Boost is the same throttle
+## asked for a different way, so the honest allowance is small: the two samples
+## are taken a few frames apart and the car has moved on a little between them,
+## which [method PlayerCar._power_fade] turns into a few newtons.
+const MAX_THROTTLE_DIFFERENCE := 0.03
+## Metres a car may travel with the e-brake held and the throttle on the floor.
+## Not zero: the wheels are braked, not welded, and the first frames of it are
+## the car already moving.
+const MAX_HANDBRAKE_CREEP := 0.5
 
 var _car: PlayerCar
 var _failures: Array[String] = []
@@ -65,6 +75,8 @@ func _run() -> void:
 	_report_rest()
 	await _measure_acceleration()
 	await _measure_braking()
+	await _measure_boost()
+	await _measure_handbrake()
 	await _measure_turn()
 	await _measure_respawn()
 
@@ -129,7 +141,15 @@ func _report_rest() -> void:
 
 
 func _measure_acceleration() -> void:
-	Input.action_press(&"drive_forward")
+	if await _pull_away_on(&"drive_forward", "acceleration") < 0.0:
+		_failures.append("never reached 10 m/s under full throttle")
+
+
+## Holds [param action] for the length of a manoeuvre and reports how long the
+## car took to reach 10 m/s, or -1.0 if it never did. Takes the action rather
+## than naming the drive key, so the same pull-away can be asked for on boost.
+func _pull_away_on(action: StringName, label: String) -> float:
+	Input.action_press(action)
 	var elapsed := 0.0
 	var to_ten := -1.0
 	while elapsed < MANOEUVRE_TIMEOUT:
@@ -137,11 +157,11 @@ func _measure_acceleration() -> void:
 		elapsed += STEP
 		if to_ten < 0.0 and _car.speed() >= 10.0:
 			to_ten = elapsed
-	print("acceleration: %.2f m/s after %.0f s, 0-10 m/s in %s" % [
-		_car.speed(), MANOEUVRE_TIMEOUT, "never" if to_ten < 0.0 else "%.2f s" % to_ten])
-	if to_ten < 0.0:
-		_failures.append("never reached 10 m/s under full throttle")
-	Input.action_release(&"drive_forward")
+	print("%-13s %.2f m/s after %.0f s, 0-10 m/s in %s" % [
+		label + ":", _car.speed(), MANOEUVRE_TIMEOUT,
+		"never" if to_ten < 0.0 else "%.2f s" % to_ten])
+	Input.action_release(action)
+	return to_ten
 
 
 func _measure_braking() -> void:
@@ -160,6 +180,131 @@ func _measure_braking() -> void:
 	if stopped < 0.0:
 		_failures.append("pressing back at %.1f m/s did not stop the car" % from)
 	Input.action_release(&"drive_back")
+
+
+## Boost is the gas pedal on the floor and nothing else, so what is measured is
+## that it asks the engine for exactly what the drive key asks it for -- at a
+## standstill, where the throttle is worth all of it, and at speed, where
+## [method PlayerCar._power_fade] has taken some of it back.
+##
+## The force, not the stopwatch: two pull-aways from what looks like the same
+## standstill are not the same run. The first one the car does after it has
+## dropped onto its suspension is half a second slower to 10 m/s than the ones
+## after it, on the two chassis that come to rest with a degree of tilt in them,
+## which says something about the suspension and nothing at all about boost.
+##
+## The car is left where the braking measurement left it, which is stopped.
+func _measure_boost() -> void:
+	var at_rest_key := await _throttle_force(&"drive_forward")
+	var at_rest_boost := await _throttle_force(&"boost")
+	_compare_throttle("at a stop", at_rest_key, at_rest_boost)
+
+	if await _pull_away_on(&"boost", "boost") < 0.0:
+		_failures.append("never reached 10 m/s on boost")
+		return
+
+	# Sampled while the car is still rolling at the speed the run left it at, so
+	# both readings are taken against the same power fade.
+	var at_speed_key := await _throttle_force(&"drive_forward")
+	var at_speed_boost := await _throttle_force(&"boost")
+	_compare_throttle("at speed", at_speed_key, at_speed_boost)
+
+	# And the rule boost does not get out of: a throttle pushed against the way
+	# the car is moving brakes instead of driving.
+	Input.action_press(&"drive_back")
+	var reversing := await _wait_until(func() -> bool: return _car.speed() <= -2.0)
+	Input.action_release(&"drive_back")
+	if not reversing:
+		_failures.append("the car never reversed, so boost against it went unmeasured")
+		return
+	Input.action_press(&"boost")
+	await physics_frame
+	await physics_frame
+	print("boost back:   %.2f m/s, engine force %.0f N, brake %.0f" % [
+		_car.speed(), _car.engine_force, _car.brake])
+	if not is_zero_approx(_car.engine_force) or _car.brake < _car.brake_strength:
+		_failures.append("boost against the way the car was moving drove instead of braking")
+	# Held until the car has stopped, which is that brake doing the stopping.
+	if not await _wait_until(func() -> bool: return _car.speed() >= -0.2):
+		_failures.append("boost held against a reversing car never brought it to a stop")
+	Input.action_release(&"boost")
+
+
+## Engine force one throttle input produces, in newtons. Two frames rather than
+## one: [signal SceneTree.physics_frame] fires before the nodes step, so the
+## first one still reports the force from before the press.
+func _throttle_force(action: StringName) -> float:
+	Input.action_press(action)
+	await physics_frame
+	await physics_frame
+	var force := _car.engine_force
+	Input.action_release(action)
+	await physics_frame
+	return force
+
+
+func _compare_throttle(where: String, on_key: float, on_boost: float) -> void:
+	var allowed := _car.engine_power * MAX_THROTTLE_DIFFERENCE
+	print("throttle:     %-11s key %.0f N, boost %.0f N, %+.0f N" % [
+		where + ",", on_key, on_boost, on_boost - on_key])
+	if absf(on_boost - on_key) > allowed:
+		_failures.append("boost asked for %.0f N %s where the drive key asks for %.0f N"
+				% [on_boost, where, on_key])
+
+
+## Runs the simulation until [param predicate] is true, and reports whether it
+## became true before the manoeuvre timed out. A car that never does what it is
+## being asked to do fails the test rather than hanging it.
+func _wait_until(predicate: Callable) -> bool:
+	var elapsed := 0.0
+	while elapsed < MANOEUVRE_TIMEOUT:
+		await physics_frame
+		elapsed += STEP
+		if predicate.call():
+			return true
+	return false
+
+
+## The e-brake: how hard it stops the car, and that it outranks the throttle.
+## Measured against the service brake the car already has -- pressing back --
+## because the one thing an e-brake has to be is the strongest pedal on the car.
+func _measure_handbrake() -> void:
+	Input.action_press(&"drive_forward")
+	await _wait(4.0)
+	Input.action_release(&"drive_forward")
+
+	var from := _car.speed()
+	var start := _car.global_position
+	Input.action_press(&"handbrake")
+	var elapsed := 0.0
+	var stopped := -1.0
+	while elapsed < MANOEUVRE_TIMEOUT:
+		await physics_frame
+		elapsed += STEP
+		if _car.speed() <= 0.2:
+			stopped = elapsed
+			break
+	var travelled := Vector2(
+			_car.global_position.x - start.x, _car.global_position.z - start.z).length()
+	print("e-brake:      %.2f m/s to a stop in %s, %.2f m" % [
+		from, "never" if stopped < 0.0 else "%.2f s" % stopped, travelled])
+	if stopped < 0.0:
+		_failures.append("the e-brake at %.1f m/s did not stop the car" % from)
+
+	# Still held, now with the throttle on the floor and boost with it: the
+	# e-brake is the one input that beats the gas pedal.
+	var held_from := _car.global_position
+	Input.action_press(&"drive_forward")
+	Input.action_press(&"boost")
+	await _wait(2.0)
+	var crept := Vector2(
+			_car.global_position.x - held_from.x, _car.global_position.z - held_from.z).length()
+	print("e-brake held: %.2f m in 2 s with the throttle down and boost on" % crept)
+	if crept > MAX_HANDBRAKE_CREEP:
+		_failures.append("the car drove %.2f m against a held e-brake" % crept)
+	Input.action_release(&"boost")
+	Input.action_release(&"drive_forward")
+	Input.action_release(&"handbrake")
 
 
 func _measure_turn() -> void:

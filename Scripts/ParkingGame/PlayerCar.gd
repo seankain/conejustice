@@ -20,6 +20,11 @@ extends VehicleBody3D
 ##   assembly; GDScript does not let one object emit another's signal. Callers
 ##   call [method respawn] and the car emits.
 ##
+## Two buttons the source has no equivalent of at all: [b]boost[/b], the
+## throttle held at full whatever the drive keys are saying, and the
+## [b]e-brake[/b], which locks every wheel harder than anything else on the car.
+## Neither is a resource the player spends -- see [method _drive].
+##
 ## The visual half of the car lives under [member visuals] and is driven from
 ## the physics wheels each frame, never the other way round. That subtree is
 ## self-contained on purpose: vehicle select (T10) instances it on a turntable
@@ -86,6 +91,15 @@ signal hit_obstacle(kind: Obstacle.Kind)
 @export var steering_speed: float = 2.4
 ## Brake force applied when the drive input opposes the way the car is moving.
 @export var brake_strength: float = 40.0
+## Brake force the e-brake applies, at every wheel at once. Stronger than
+## [member brake_strength] on purpose: that one is the car braking itself
+## because the player asked for the other direction, and this one is the player
+## standing on the pedal. Measured on the SUV with
+## [code]Tools/test_drive_chassis.gd[/code]: 11 m/s to a stop in 0.78 s over
+## 4.3 m, against 1.70 s for the drive key. Twice the brake and not four times
+## it -- 120 stops the same car in 0.53 s, which reads less like braking than
+## like the car hitting something.
+@export var handbrake_strength: float = 80.0
 ## Brake force applied with no input at all, so a car left alone rolls to a stop
 ## instead of coasting across the lot. The round ends on the car settling, so
 ## coasting forever would mean a round that never ends.
@@ -168,6 +182,23 @@ func _process(_delta: float) -> void:
 ## Steering eases toward the input; drive is immediate. Pushing against the way
 ## the car is already moving brakes rather than reverses, which is the one place
 ## this deliberately does not behave like the source.
+##
+## [b]The e-brake outranks everything the throttle is doing[/b], boost included.
+## It is read after the steering is set, so the wheels still turn while it is
+## held: the car can be dragged round on a locked set of wheels rather than
+## being frozen where it stands.
+##
+## [b]Boost is the gas pedal on the floor, and nothing else.[/b] No extra power,
+## no charge to spend, no fade of its own -- it writes full forward throttle
+## into the same axis the drive keys write, and everything downstream treats it
+## as the throttle it is: the brake-rather-than-reverse rule still brakes a car
+## that is rolling backwards, [method _power_fade] still tapers it out at
+## [member top_speed], and [EngineAudio] still hears it as load. On a keyboard,
+## where that axis is already 0 or 1, holding boost is the same as holding
+## forward, and that is the whole of it. What it is for is the throttle that is
+## not a key -- an analog trigger, a stick, a touch button -- where the axis
+## sits somewhere below 1.0 and "all the way down" is otherwise something the
+## player cannot ask for.
 func _drive(delta: float) -> void:
 	if not input_enabled:
 		brake = idle_brake
@@ -176,7 +207,14 @@ func _drive(delta: float) -> void:
 	var steer_input := Input.get_axis(&"steer_right", &"steer_left")
 	steering = move_toward(steering, steer_input * max_steer, delta * steering_speed)
 
+	if Input.is_action_pressed(&"handbrake"):
+		engine_force = 0.0
+		brake = handbrake_strength
+		return
+
 	var drive_input := Input.get_axis(&"drive_back", &"drive_forward")
+	if Input.is_action_pressed(&"boost"):
+		drive_input = 1.0
 	var forward_speed := speed()
 
 	if is_zero_approx(drive_input):
