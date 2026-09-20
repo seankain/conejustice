@@ -22,7 +22,8 @@ extends VehicleBody3D
 ##
 ## Two buttons the source has no equivalent of at all: [b]boost[/b], the
 ## throttle held at full whatever the drive keys are saying, and the
-## [b]e-brake[/b], which locks every wheel harder than anything else on the car.
+## [b]handbrake[/b], which locks every wheel harder than anything else on the
+## car.
 ## Neither is a resource the player spends -- see [method _drive].
 ##
 ## The visual half of the car lives under [member visuals] and is driven from
@@ -91,7 +92,7 @@ signal hit_obstacle(kind: Obstacle.Kind)
 @export var steering_speed: float = 2.4
 ## Brake force applied when the drive input opposes the way the car is moving.
 @export var brake_strength: float = 40.0
-## Brake force the e-brake applies, at every wheel at once. Stronger than
+## Brake force the handbrake applies, at every wheel at once. Stronger than
 ## [member brake_strength] on purpose: that one is the car braking itself
 ## because the player asked for the other direction, and this one is the player
 ## standing on the pedal. Measured on the SUV with
@@ -183,10 +184,10 @@ func _process(_delta: float) -> void:
 ## the car is already moving brakes rather than reverses, which is the one place
 ## this deliberately does not behave like the source.
 ##
-## [b]The e-brake outranks everything the throttle is doing[/b], boost included.
-## It is read after the steering is set, so the wheels still turn while it is
-## held: the car can be dragged round on a locked set of wheels rather than
-## being frozen where it stands.
+## [b]The handbrake outranks everything the throttle is doing[/b], boost
+## included. It is read after the steering is set, so the wheels still turn
+## while it is held: the car can be dragged round on a locked set of wheels
+## rather than being frozen where it stands.
 ##
 ## [b]Boost is the gas pedal on the floor, and nothing else.[/b] No extra power,
 ## no charge to spend, no fade of its own -- it writes full forward throttle

@@ -44,9 +44,9 @@ const MIN_TURN_OFFSET := 0.5
 ## are taken a few frames apart and the car has moved on a little between them,
 ## which [method PlayerCar._power_fade] turns into a few newtons.
 const MAX_THROTTLE_DIFFERENCE := 0.03
-## Metres a car may travel with the e-brake held and the throttle on the floor.
-## Not zero: the wheels are braked, not welded, and the first frames of it are
-## the car already moving.
+## Metres a car may travel with the handbrake held and the throttle on the
+## floor. Not zero: the wheels are braked, not welded, and the first frames of
+## it are the car already moving.
 const MAX_HANDBRAKE_CREEP := 0.5
 
 var _car: PlayerCar
@@ -265,9 +265,10 @@ func _wait_until(predicate: Callable) -> bool:
 	return false
 
 
-## The e-brake: how hard it stops the car, and that it outranks the throttle.
+## The handbrake: how hard it stops the car, and that it outranks the throttle.
 ## Measured against the service brake the car already has -- pressing back --
-## because the one thing an e-brake has to be is the strongest pedal on the car.
+## because the one thing a handbrake has to be is the strongest pedal on the
+## car.
 func _measure_handbrake() -> void:
 	Input.action_press(&"drive_forward")
 	await _wait(4.0)
@@ -286,22 +287,23 @@ func _measure_handbrake() -> void:
 			break
 	var travelled := Vector2(
 			_car.global_position.x - start.x, _car.global_position.z - start.z).length()
-	print("e-brake:      %.2f m/s to a stop in %s, %.2f m" % [
+	print("handbrake:    %.2f m/s to a stop in %s, %.2f m" % [
 		from, "never" if stopped < 0.0 else "%.2f s" % stopped, travelled])
 	if stopped < 0.0:
-		_failures.append("the e-brake at %.1f m/s did not stop the car" % from)
+		_failures.append("the handbrake at %.1f m/s did not stop the car" % from)
 
 	# Still held, now with the throttle on the floor and boost with it: the
-	# e-brake is the one input that beats the gas pedal.
+	# handbrake is the one input that beats the gas pedal.
 	var held_from := _car.global_position
 	Input.action_press(&"drive_forward")
 	Input.action_press(&"boost")
 	await _wait(2.0)
 	var crept := Vector2(
 			_car.global_position.x - held_from.x, _car.global_position.z - held_from.z).length()
-	print("e-brake held: %.2f m in 2 s with the throttle down and boost on" % crept)
+	print("held on it:   %.2f m in 2 s with the throttle down and boost on"
+			% crept)
 	if crept > MAX_HANDBRAKE_CREEP:
-		_failures.append("the car drove %.2f m against a held e-brake" % crept)
+		_failures.append("the car drove %.2f m against a held handbrake" % crept)
 	Input.action_release(&"boost")
 	Input.action_release(&"drive_forward")
 	Input.action_release(&"handbrake")
