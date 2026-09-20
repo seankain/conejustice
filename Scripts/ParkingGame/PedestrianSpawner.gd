@@ -217,6 +217,10 @@ func _spawn(scene: PackedScene, at: Vector3, target: Vector3) -> Pedestrian:
 	add_child(pedestrian)
 	pedestrian.global_transform = Transform3D(
 			Basis.looking_at(_facing(spot, target), Vector3.UP), spot)
+	# Put there rather than walked there, and the second placement is after the
+	# one entering the tree did: without this they are drawn for a frame on the
+	# way over from wherever they were.
+	pedestrian.reset_physics_interpolation()
 	pedestrian.walk_to(target)
 	_living.append(pedestrian)
 	return pedestrian

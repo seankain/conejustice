@@ -24,6 +24,12 @@ const LOADING_SCENE := "res://Scenes/Parkade/LoadingScreen.tscn"
 ## [member current_game_id] while the menu itself is up.
 const NO_GAME := &""
 
+## The project's own answer to whether bodies are drawn between physics ticks.
+## A cabinet may turn it on for itself -- see
+## [method ParkingGame.use_physics_interpolation] -- and [method _reset_tree]
+## puts this back when that cabinet is swapped out.
+const PHYSICS_INTERPOLATION_SETTING := "physics/common/physics_interpolation"
+
 ## Every cabinet, in the order the menu lists them.
 var games: Array[ArcadeGame] = []
 
@@ -145,8 +151,12 @@ func _change_scene(path: String) -> void:
 
 
 ## Every swap goes through here, so each one leaves the tree in the same state:
-## running, with a visible cursor. A game that paused the tree or hid the
-## pointer to aim would otherwise hand those over to whatever comes next.
+## running, with a visible cursor, drawing the way the project says to. A game
+## that paused the tree, hid the pointer to aim or asked for its bodies to be
+## drawn between physics ticks would otherwise hand those over to whatever comes
+## next.
 func _reset_tree() -> void:
 	get_tree().paused = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	get_tree().physics_interpolation = ProjectSettings.get_setting(
+			PHYSICS_INTERPOLATION_SETTING, false)

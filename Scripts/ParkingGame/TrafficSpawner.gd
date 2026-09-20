@@ -240,6 +240,10 @@ func _park(bay: ScoredParkingSpace, vehicle: DrivableVehicle) -> void:
 	car.global_transform = Transform3D(Basis.looking_at(axis, Vector3.UP), spot)
 	add_child(car)
 	car.global_transform = Transform3D(Basis.looking_at(axis, Vector3.UP), spot)
+	# Entering the tree resets this, and then the line above moves the car again:
+	# without a second reset the car is drawn for one frame somewhere between the
+	# lot's origin and its bay.
+	car.reset_physics_interpolation()
 	_bay_of[car] = bay
 	_cars.append(car)
 	_settling.append(car)

@@ -397,6 +397,48 @@ The framing is authored in `Scenes/ParkingGame/ChaseCamera.tscn`, not in code: t
 `spring_length` how far back, and the `Camera3D`'s `fov` the lens it sits behind. The
 exports on `ChaseCamera` are how it *moves*.
 
+### The lot is drawn between ticks
+
+The lot is simulated 60 times a second and drawn as often as the machine will draw it,
+which in a browser is whatever the tab is given. Those are different clocks, and a camera
+that follows the car has to be told which one it is on — otherwise `global_position` is a
+staircase that holds still for two or three drawn frames and then jumps a tick's travel
+all at once, and a rig easing towards it every drawn frame draws the difference: the car
+creeps forward in frame while it is standing still, snaps back when it moves, sixty times
+a second. That reads as the car vibrating and blurring against a lot that is perfectly
+steady. While the camera was parented to the car this was invisible, because the camera
+was on the same staircase.
+
+So `ParkingGame.use_physics_interpolation()` turns physics interpolation on before the lot
+is built — the cars are drawn along the line between the last two ticks — and the rig asks
+`get_global_transform_interpolated()` where the car *is being drawn* rather than where it
+is. The rig itself is `PHYSICS_INTERPOLATION_MODE_OFF`, because it is drawn from
+arithmetic it does at render time and interpolating that would hold the view a tick behind
+its own mouse.
+
+Measured with `Tools/test_camera_smoothness.tscn`, which samples the car's position on
+screen every drawn frame at 60, 90 and 144 fps and takes the second difference — zero for
+anything sweeping across the screen at a steady rate, the size of the step for a staircase:
+
+| | 90 fps | 144 fps | in a turn |
+|---|---|---|---|
+| following `global_position` | 2.08 px | 2.10 px | 2.28 px |
+| following what is drawn | 0.03 px | 0.02 px | 0.03 px |
+
+At 60 fps there is nothing to see either way: the two clocks are the same one, so no frame
+ever falls between two ticks. That is why this shipped.
+
+**Anything that *puts* a body somewhere has to say so**, with
+`reset_physics_interpolation()` — otherwise it is drawn for one frame somewhere on the way
+there, which for a respawn across the lot is metres. `PlayerCar.respawn()`,
+`TrafficSpawner`, `PedestrianSpawner` and `LotEvents` each do. A body an `NpcDriver` moves
+needs nothing: it is driven, a tick at a time, which is exactly what interpolation is for.
+
+It is turned on per cabinet rather than in `project.godot`: Cone Justice moves its camera
+along a rail with a tween and has no simulation under it. `Parkade._reset_tree()` puts the
+project's own setting back on the way out, the way it puts the pointer and the pause state
+back.
+
 ## Controls
 
 | | |
@@ -430,6 +472,7 @@ godot --headless --script Tools/test_grade_table.gd          the grade table
 godot --headless --script Tools/test_bay_alignment.gd        the bays against the lot's paint
 godot --headless --script Tools/test_drive_chassis.gd        a chassis on a flat plane
 godot --headless --script Tools/test_chase_camera.gd         what the camera takes from the car, and what it does not
+godot --headless Tools/test_camera_smoothness.tscn           how steady the car is on screen, on every drawn frame
 godot --headless Tools/test_round_flow.tscn                  a whole round in the lot
 godot --headless Tools/test_lot_events.tscn                 a car leaving, a rival arriving, the odds
 godot --headless Tools/test_pedestrians.tscn                 a crossing, a knock-down, and what it costs

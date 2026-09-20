@@ -188,6 +188,10 @@ func start_arrival() -> bool:
 	var driver := _new_driver()
 	driver.add_child(car)
 	car.global_transform = pose
+	# Placed at the gate rather than driven to it, and placed again after
+	# entering the tree: without this the car is drawn arriving from wherever the
+	# spawner built it.
+	car.reset_physics_interpolation()
 	driver.configure(car, _geometry, player, rng)
 	driver.arrive(target)
 	rival_arriving.emit(target)

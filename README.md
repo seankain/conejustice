@@ -53,7 +53,9 @@ one with less time on the clock.
 The camera behind the car is not attached to it. It follows where the car goes and which way it is
 pointing and takes nothing else: the rig's basis is a heading and a pitch with no roll term in it,
 so a car that leans into a turn, pitches under braking or bounces over the paint moves the view not
-at all.
+at all. It follows where the car is *drawn* rather than where it is, which is not the same thing in
+a lot simulated sixty times a second and drawn as fast as the browser will draw it — see
+[docs/parking-game.md](docs/parking-game.md).
 
 [docs/parking-game.md](docs/parking-game.md) documents the game: the round, the grade table and
 where to tune it. [docs/parking-game-port.md](docs/parking-game-port.md) is the plan the port

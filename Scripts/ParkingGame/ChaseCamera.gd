@@ -34,6 +34,28 @@ extends SpringArm3D
 ## sibling rather than a child means the car has to be excluded from that cast
 ## by hand -- see [method follow].
 ##
+## [b]It follows where the car is drawn, not where the car is.[/b] The lot is
+## simulated sixty times a second and drawn as often as the machine will draw
+## it, so a car's [member Node3D.global_position] is a staircase: it holds still
+## for two or three drawn frames and then jumps a sixtieth of a second's travel
+## all at once. A camera that eases towards that every drawn frame draws the
+## difference -- the car creeps forward in frame while it is still, snaps back
+## when it moves, sixty times a second, which is the car appearing to vibrate
+## and blur while the lot behind it is perfectly steady. Being parented to the
+## car hid this, because the two staircases were the same one.
+##
+## The fix is to ask the car the same question the renderer asks it:
+## [method Node3D.get_global_transform_interpolated] is where the car is being
+## drawn this instant, on the line between the last two physics ticks. That
+## needs physics interpolation, which [method ParkingGame.use_physics_interpolation]
+## turns on for the lot; with it off, that call returns the raw transform and
+## the rig is no worse than it was. See [method _refresh_pose].
+##
+## The rig itself is marked [constant Node.PHYSICS_INTERPOLATION_MODE_OFF],
+## because it writes its own transform every drawn frame already: interpolating
+## a camera that is drawn from render-time arithmetic would hold the view a tick
+## behind the arithmetic and give the mouse a lag that is not the mouse's.
+##
 ## [b]The framing is authored in the scene, not here.[/b] The rig's own
 ## transform and spring length are read once in [method _ready] and then the
 ## transform is written every frame: [code]position.y[/code] is how far above
@@ -155,6 +177,11 @@ var _recentre_elapsed: float = 0.0
 var _recentre_from_yaw: float = 0.0
 var _recentre_from_pitch: float = 0.0
 
+## Where the car is being drawn, refreshed once a frame by [method
+## _refresh_pose]. Everything the rig reads off the car reads it from here, so
+## the whole frame is built from one instant rather than from two.
+var _pose := Transform3D.IDENTITY
+
 ## Last known position of a followed node that cannot say how fast it is going,
 ## so its speed can be measured instead. Unused for [PlayerCar].
 var _last_position := Vector3.ZERO
@@ -162,6 +189,10 @@ var _measuring_speed: bool = false
 
 
 func _ready() -> void:
+	# This rig is drawn from arithmetic done at render time, so it is already at
+	# the instant the frame is drawn and has nothing to interpolate. The Camera3D
+	# under it inherits this.
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_pivot_height = position.y
 	# Only the pitch. The heading comes from the car and the roll is never
 	# anything but zero, so authoring either of those in the scene would be
@@ -223,12 +254,35 @@ func _process(delta: float) -> void:
 		# The car can go out from under the rig: leaving the cabinet frees the
 		# lot, and the order its children go in is not ours to rely on.
 		_target = null
+	# Before anything reads the car, including the recentre's idea of where
+	# "behind" is.
+	_refresh_pose()
 	_advance_look(delta)
 	if _target == null:
 		return
 	_follow(delta)
 	_frame_for_speed(delta)
 	_apply()
+
+
+## Reads where the car is being drawn this frame.
+##
+## Not [member Node3D.global_transform], which is where the car will be drawn at
+## the end of the physics tick currently in progress and stays there for every
+## drawn frame until that tick ends. Easing towards that is easing towards a
+## staircase, and the easing draws the steps -- see the class docs.
+##
+## With physics interpolation off this is the raw transform and the rig behaves
+## as it did before; it is [method ParkingGame.use_physics_interpolation] that
+## makes the difference, and this is what spends it.
+func _refresh_pose() -> void:
+	if _target == null:
+		return
+	# A car outside the tree has no pair of ticks to be drawn between, and is
+	# read plainly instead: [method follow] may be handed one before either of
+	# them is in the lot.
+	_pose = _target.get_global_transform_interpolated() if _target.is_inside_tree() \
+			else _target.global_transform
 
 
 ## The look half of a frame: the idle timer, the ease back, and the end-of-round
@@ -265,7 +319,7 @@ func _advance_look(delta: float) -> void:
 ## The follow half: where the rig is, and -- when it is behind the car rather
 ## than being looked around -- which way it faces.
 func _follow(delta: float) -> void:
-	var pivot := _target.global_position + Vector3.UP * _pivot_height
+	var pivot := _pose.origin + Vector3.UP * _pivot_height
 	if leash > 0.0 and _anchor.distance_to(pivot) > leash:
 		_anchor = pivot
 	else:
@@ -312,8 +366,12 @@ func snap_to_default() -> void:
 		_camera.fov = _base_fov
 	if _target == null:
 		return
+	# Called from outside a frame as often as not -- the start of a round, a car
+	# just put back on its marker -- so the pose is read here rather than assumed
+	# to be this frame's.
+	_refresh_pose()
 	_yaw = _heading(_yaw)
-	_anchor = _target.global_position + Vector3.UP * _pivot_height
+	_anchor = _pose.origin + Vector3.UP * _pivot_height
 	_measuring_speed = false
 	_apply()
 
@@ -335,7 +393,7 @@ func start_idle_rotation() -> void:
 func _heading(fallback: float) -> float:
 	if _target == null:
 		return fallback
-	var forward := -_target.global_basis.z
+	var forward := -_pose.basis.z
 	if absf(forward.x) + absf(forward.z) < HEADING_EPSILON:
 		return fallback
 	# atan2(sin, cos) of the yaw whose +Z -- the way the arm reaches, and so the
@@ -352,7 +410,7 @@ func _heading(fallback: float) -> float:
 func _ground_speed(delta: float) -> float:
 	if _target.has_method(GROUND_SPEED_METHOD):
 		return absf(_target.call(GROUND_SPEED_METHOD))
-	var here := _target.global_position
+	var here := _pose.origin
 	var moved := 0.0
 	if _measuring_speed and delta > 0.0:
 		moved = Vector2(here.x - _last_position.x, here.z - _last_position.z).length() / delta
