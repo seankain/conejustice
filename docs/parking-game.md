@@ -334,12 +334,57 @@ car's length behind it, and drove a slow circle in the aisle before coming back 
 `Tools/test_lot_events.tscn` checks all of it against the real lot, because it is derived
 rather than drawn.
 
+## The camera
+
+The camera is behind the car and is **not attached to it**, which is the whole of this
+section. A camera parented to a `VehicleBody3D` inherits everything the suspension does:
+the body pitches under braking, rolls into every turn, shakes over the paint and kicks
+when a wheel finds a kerb — and a view bolted to it does all of that about a pivot a metre
+and a half in front of the player's face. That is how you make somebody put the tab down.
+
+`ChaseCamera` is a `SpringArm3D` that lives in the lot, beside the car rather than under
+it, and follows it. It takes two things from the car and nothing else:
+
+- **Where it is.** The rig eases toward a point above the car's origin — quickly across
+  the ground (`follow_response`), slowly upwards (`height_response`). A slow vertical
+  follow is a low-pass filter: suspension bounce is small and fast and does not survive
+  it, while a kerb or a ramp is a height the car keeps and comes through. Measured: a car
+  bounced half a metre at 4 Hz moves the camera 0.05 m.
+- **Which way it is pointing**, flattened to a heading and eased at `yaw_response`.
+  Flattening is where the pitch and the roll go — the nose of a car leaning into a turn
+  flattens to the same heading as the nose of one sitting level. The rig's basis is then
+  built from that heading and a pitch, and there is no third term in it, so the camera
+  cannot roll however the car lands.
+
+Speed is allowed to do one thing, and it is framing rather than rotation: the camera eases
+back `distance_gain` metres and the lens widens by `fov_gain` degrees as the car
+approaches `speed_reference`, so 14 m/s looks different from 4.
+
+It is still a spring arm, so a wall between the camera and the car pulls the camera in
+rather than letting it clip through. Being a sibling of the car rather than its child is
+what makes that worth saying: the arm is cast from a pivot level with the car's own roof,
+so the car is excluded from the cast by hand — otherwise the first thing the arm finds,
+the moment you look down, is the car it is looking at.
+
+**Mouse look holds still.** While you are looking around, the view keeps the heading you
+left it at and the car turns underneath it; a second of stillness (`duration_to_snap`)
+eases it back behind the car over `recentre_duration`, the short way round rather than
+unwinding whatever you wound up. The camera is put back behind the car with no ease at all
+whenever the car is *moved* rather than driven — a respawn, the kill plane, the start of a
+round — and a car that gets more than `leash` metres from the rig is caught the same way
+rather than chased across the lot.
+
+The framing is authored in `Scenes/ParkingGame/ChaseCamera.tscn`, not in code: the rig's
+`position.y` is how far above the car it sits, its `rotation.x` how far it looks down,
+`spring_length` how far back, and the `Camera3D`'s `fov` the lens it sits behind. The
+exports on `ChaseCamera` are how it *moves*.
+
 ## Controls
 
 | | |
 |---|---|
 | `W` `A` `S` `D` | drive. Pushing against the way the car is moving brakes rather than reversing. |
-| Mouse | look around. The camera recentres after a second of stillness. |
+| Mouse | look around. The view holds the heading you leave it at while the car turns under it, and eases back behind the car after a second of stillness. |
 | `R` | put the car back on the marker — which restarts the attempt |
 | `Escape` | pause, and again to resume. On the select screen it leaves for the Parkade menu. |
 
@@ -355,6 +400,7 @@ rather than drawn.
 | `PedestrianCatalog` resource | which scenes a person and a goose are |
 | `ScoredParkingSpace` | settle speed and settle time |
 | `PlayerCar` | brake strength, idle brake, steering rate |
+| `ChaseCamera` | how hard the camera follows the car and its heading, how much of the car's bounce reaches it, the speed framing, and mouse look |
 | `ParkingHUD` | banner duration, the low-clock warning, and `show_debug` for the live measurements |
 
 ## Tests
@@ -363,6 +409,7 @@ rather than drawn.
 godot --headless --script Tools/test_grade_table.gd          the grade table
 godot --headless --script Tools/test_bay_alignment.gd        the bays against the lot's paint
 godot --headless --script Tools/test_drive_chassis.gd        a chassis on a flat plane
+godot --headless --script Tools/test_chase_camera.gd         what the camera takes from the car, and what it does not
 godot --headless Tools/test_round_flow.tscn                  a whole round in the lot
 godot --headless Tools/test_lot_events.tscn                 a car leaving, a rival arriving, the odds
 godot --headless Tools/test_pedestrians.tscn                 a crossing, a knock-down, and what it costs

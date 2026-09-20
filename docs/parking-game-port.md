@@ -329,7 +329,17 @@ The source's tilt clamp is wrong twice over: it clamps `Rotation.X` (radians) ag
 (75, degrees), and it clamps the *old* value rather than the one it just computed, so the clamp
 never does anything. Clamp the new pitch in radians against `deg_to_rad(tilt_max)`.
 
-**Done when:** look works, pitch is actually limited, and the camera returns to centre on idle.
+**Do not hang the arm off the car.** The source parents its `SpringArm3D` to the player, so every
+degree of freedom the suspension has — pitch under braking, roll into a turn, the shake of the
+springs over the paint — is inherited by the view, about a pivot a metre and a half in front of the
+player's face. Keep the rig in the lot and follow the car instead: its position, eased, and its
+forward axis flattened to a heading, with the rig's basis built from that heading and a fixed pitch
+so there is no roll term in it to be driven. A sibling arm does have to exclude the car from its own
+cast, which a child arm never had to think about.
+
+**Done when:** look works, pitch is actually limited, the camera returns to centre on idle, and a
+car that pitches, rolls or bounces under it moves the view not at all —
+`Tools/test_chase_camera.gd`.
 
 ### T6 — The lot
 **Depends on:** T3 · **Size:** M
@@ -586,6 +596,9 @@ duplication ones are in [Shared code](#shared-code-not-copied-code) and are not 
 - **`Hud.ShowMessage` starts its timer twice**, once with an explicit 3 s and once with the
   inspector value, so the message duration is whichever wins.
 - **`CameraControl` tilt clamp is a no-op** and mixes degrees with radians (T5).
+- **`CameraControl` hangs off the player**, so the camera inherits the chassis's pitch, roll and
+  suspension bounce along with its heading. A chase camera follows a car; it is not bolted to one
+  (T5).
 - **`Game._Input` polls `Input.IsActionPressed("Pause")` inside an event handler**, so pause fires
   on any key held while Escape is down. Use `event.is_action_pressed`.
 - **`GenerateObstacles` rejection-samples** space indices until a set fills (T11).

@@ -288,7 +288,13 @@ func _spawn_car() -> void:
 	if _camera_scene == null:
 		return
 	_camera = _camera_scene.instantiate() as ChaseCamera
-	car.add_child(_camera)
+	# Into the lot, beside the car, and then pointed at it -- not added to the
+	# car. A camera parented to a [VehicleBody3D] inherits the body's roll,
+	# pitch and bounce along with its heading, which is a view that tips into
+	# every turn and shakes over every kerb. [ChaseCamera] follows the car
+	# instead and takes only where it is and which way it is pointing.
+	_lot.add_child(_camera)
+	_camera.follow(car)
 
 
 ## Whether the round's camera wants the pointer captured. Asked by the game root

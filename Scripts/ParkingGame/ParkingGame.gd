@@ -37,7 +37,8 @@ enum State {
 @export var vehicle_select_scene: PackedScene
 ## The lot the round is played in.
 @export var lot_scene: PackedScene
-## The camera rig, parented to whichever car the player is driving.
+## The camera rig. Added to the lot and pointed at whichever car the player
+## is driving, rather than parented to it -- see [ChaseCamera].
 @export var chase_camera_scene: PackedScene
 ## Clock, grade and score card. Added with the lot and pointed at the round.
 @export var hud_scene: PackedScene

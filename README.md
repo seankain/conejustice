@@ -50,6 +50,11 @@ geese cross the aisle in a gaggle because it is there — hit one and it goes ov
 a grade. All of it gets likelier every level, so a later lot is a busier one rather than the same
 one with less time on the clock.
 
+The camera behind the car is not attached to it. It follows where the car goes and which way it is
+pointing and takes nothing else: the rig's basis is a heading and a pitch with no roll term in it,
+so a car that leans into a turn, pitches under braking or bounces over the paint moves the view not
+at all.
+
 [docs/parking-game.md](docs/parking-game.md) documents the game: the round, the grade table and
 where to tune it. [docs/parking-game-port.md](docs/parking-game-port.md) is the plan the port
 followed — what the source contained, which of its defects were fixed on the way across rather
