@@ -149,6 +149,23 @@ Three engine facts the chassis are built around, all measured:
   by four, and the engine has no drag to speak of — `PlayerCar` fades its power towards
   `top_speed` so the car has one.
 
+Two buttons the prototype has no equivalent of:
+
+- **Boost is the gas pedal on the floor, and nothing else.** It writes full forward
+  throttle into the same axis the drive keys write, so everything downstream treats it as
+  the throttle it is: it brakes rather than drives a car that is rolling backwards, the
+  power fade still tapers it out at `top_speed`, and the engine note still hears it as
+  load. On a keyboard, where that axis is already 0 or 1, holding boost is the same as
+  holding `W` — measured at 27 N of 2200 apart, which is the two samples being a few
+  frames apart rather than boost being worth anything. What it is for is the throttle that
+  is not a key: an analog trigger, a stick or a touch button, where the axis sits below
+  1.0 and "all the way down" is otherwise not something the player can ask for.
+- **The handbrake outranks everything the throttle is doing**, boost included. It cuts the
+  engine and puts `handbrake_strength` on every wheel — twice the brake the car gets for
+  pressing against itself, and no more than that, because four times it reads less like
+  braking than like the car hitting something. Steering is set before it is read, so the
+  wheels still turn while it is held.
+
 `Tools/test_drive_chassis.gd` measures what a chassis is worth:
 
 ```
@@ -161,6 +178,7 @@ godot --headless --script Tools/test_drive_chassis.gd -- res://Scenes/Vehicles/M
 | Mass | 1400 kg | 1850 kg | 1250 kg |
 | 0–10 m/s | 3.6 s | 6.0 s | 2.4 s |
 | Stopping | 12.7 m/s in 1.7 s | 11.2 m/s in 1.9 s | 13.8 m/s in 1.7 s |
+| Stopping on the handbrake | 11.0 m/s in 0.78 s | 9.0 m/s in 0.83 s | 12.2 m/s in 0.78 s |
 | Lean at full lock | 2.2° | 1.2° | 2.5° |
 
 ## The lot
@@ -384,6 +402,8 @@ exports on `ChaseCamera` are how it *moves*.
 | | |
 |---|---|
 | `W` `A` `S` `D` | drive. Pushing against the way the car is moving brakes rather than reversing. |
+| `Shift` | boost: the gas pedal all the way down, whatever the drive keys are doing. It adds no power of its own, so on a keyboard it is a second way to hold `W`. |
+| `Space` | handbrake. Cuts the engine and locks every wheel — the hardest the car stops — and beats the throttle while it is held. You can still steer on it. |
 | Mouse | look around. The view holds the heading you leave it at while the car turns under it, and eases back behind the car after a second of stillness. |
 | `R` | put the car back on the marker — which restarts the attempt |
 | `Escape` | pause, and again to resume. On the select screen it leaves for the Parkade menu. |
@@ -399,7 +419,7 @@ exports on `ChaseCamera` are how it *moves*.
 | `Pedestrian` | walk speed, how hard a car throws one, how long one keeps trying before it gives up |
 | `PedestrianCatalog` resource | which scenes a person and a goose are |
 | `ScoredParkingSpace` | settle speed and settle time |
-| `PlayerCar` | brake strength, idle brake, steering rate |
+| `PlayerCar` | brake strength, handbrake strength, idle brake, steering rate |
 | `ChaseCamera` | how hard the camera follows the car and its heading, how much of the car's bounce reaches it, the speed framing, and mouse look |
 | `ParkingHUD` | banner duration, the low-clock warning, and `show_debug` for the live measurements |
 
