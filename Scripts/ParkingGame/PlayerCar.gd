@@ -318,6 +318,11 @@ func respawn() -> void:
 		return
 	var marker := markers[0] as Node3D
 	global_transform = marker.global_transform
+	# The car did not travel here, so nothing should be drawn of the journey: a
+	# body that is interpolated between where it was and where it was put is
+	# drawn smeared across the lot for a frame, and the chase camera, which
+	# follows what is drawn, goes with it.
+	reset_physics_interpolation()
 	# Zeroed after the move, not before: a body teleported with velocity still on
 	# it arrives at the marker sliding, which reads as the respawn having failed.
 	linear_velocity = Vector3.ZERO

@@ -67,6 +67,31 @@ var _lot: Node3D = null
 var current_round: ParkingRound = null
 
 
+## Draws the lot between physics ticks rather than on them.
+##
+## The lot is a rigid body simulation stepped sixty times a second, drawn as
+## often as the machine will draw it -- and in a browser that is whatever the
+## tab is given, which is rarely sixty. Without this, every car in the lot is
+## drawn where it was at the last tick and stays there for two or three frames
+## before jumping, and [ChaseCamera], which eases towards the car every drawn
+## frame, turns that staircase into a car that visibly buzzes against a lot that
+## does not. With it, the cars are drawn along the line between the last two
+## ticks, which is where the camera is already looking.
+##
+## Turned on here rather than in [code]project.godot[/code] because it is a
+## property of [i]this[/i] cabinet: Cone Justice moves its camera along a rail
+## with a tween and has no simulation under it, and is left alone.
+## [method Parkade._reset_tree] puts it back on the way out, the way it puts the
+## pointer and the pause state back.
+##
+## Anything that puts a body somewhere rather than driving it there has to say
+## so afterwards -- [method Node.reset_physics_interpolation], or the body is
+## drawn smeared between the two places for a frame. [method PlayerCar.respawn],
+## [TrafficSpawner], [PedestrianSpawner] and [LotEvents] each do.
+static func use_physics_interpolation(tree: SceneTree) -> void:
+	tree.physics_interpolation = true
+
+
 func _ready() -> void:
 	if vehicle_select_scene == null:
 		_enter_play()
@@ -109,6 +134,9 @@ func _on_vehicle_confirmed(vehicle: DrivableVehicle) -> void:
 ## its own [method Node._ready], so they have to be in the tree before it is.
 func _enter_play() -> void:
 	state = State.PLAY
+	# Before the lot is built, so every body in it is interpolated from the first
+	# tick it is simulated for.
+	use_physics_interpolation(get_tree())
 	if _chosen_vehicle == null:
 		_chosen_vehicle = catalog.first() if catalog != null else null
 	if lot_scene == null:
